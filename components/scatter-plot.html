@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Campaign Performance — Scatter Plot</title>
+  <link rel="stylesheet" href="../design-tokens.css">
+
+  <style>
+    /* ── Component: Campaign Performance Scatter Plot ──────────────── */
+    .chart-card {
+      min-height: 380px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .chart-card .card-body {
+      flex: 1;
+      min-height: 0;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .chart-card .chart-container {
+      width: 100%;
+      height: 100%;
+      position: absolute;
+      inset: 0;
+    }
+
+    .chart-card .chart-container canvas {
+      display: block;
+      width: 100% !important;
+      height: 100% !important;
+    }
+
+    /* ── Skeleton / loading state ─────────────────────────────────── */
+    .chart-card .skeleton-chart {
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(
+        90deg,
+        var(--color-bg-surface, #1a1d27) 25%,
+        var(--color-bg-hover, #2a2f42) 50%,
+        var(--color-bg-surface, #1a1d27) 75%
+      );
+      background-size: 200% 100%;
+      animation: shimmer 1.5s ease infinite;
+      border-radius: var(--radius-sm, 4px);
+    }
+
+    @keyframes shimmer {
+      0%   { background-position: -200% 0; }
+      100% { background-position: 200% 0; }
+    }
+
+    /* ── Responsive adjustments ───────────────────────────────────── */
+    @media (max-width: 768px) {
+      .chart-card {
+        min-height: 320px;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .chart-card {
+        min-height: 280px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="card chart-card" id="campaign-performance-card">
+    <div class="card-header">
+      <span class="card-title">Campaign Performance</span>
+    </div>
+    <div class="card-body" style="height:320px;">
+      <div class="chart-container" id="campaign-performance-chart">
+        <canvas></canvas>
+      </div>
+      <div class="skeleton-chart" id="chart-skeleton" style="position:absolute;inset:0;z-index:1;"></div>
+    </div>
+  </div>
+
+  <script src="../js/bi-utils.js"></script>
+  <script src="../js/bi-charts.js"></script>
+
+  <script>
+    (function() {
+      'use strict';
+
+      const CHART_ID = 'campaign-performance-chart';
+      const SKELETON_ID = 'chart-skeleton';
+
+      /**
+       * Render the scatter chart with the given data.
+       * Removes the skeleton overlay, then calls BI.charts.scatter().
+       */
+      function renderChart(data) {
+        // Hide skeleton
+        var skeleton = document.getElementById(SKELETON_ID);
+        if (skeleton) {
+          skeleton.style.opacity = '0';
+          skeleton.style.transition = 'opacity 0.3s ease';
+          setTimeout(function() { skeleton.remove(); }, 350);
+        }
+
+        // Render using the chart engine
+        BI.charts.scatter(CHART_ID, data, {
+          xLabel: 'Ad Spend ($)',
+          yLabel: 'Revenue ($)',
+          animate: true,
+        });
+      }
+
+      /**
+       * Fetch sample data from the assets directory.
+       * Falls back to generated data on failure.
+       */
+      function loadData() {
+        // Attempt to fetch from the sample data file
+        fetch('../assets/sample-data.json')
+          .then(function(resp) {
+            if (!resp.ok) throw new Error('HTTP ' + resp.status);
+            return resp.json();
+          })
+          .then(function(json) {
+            var data = json.scatterData;
+            if (data && data.length > 0) {
+              renderChart(data);
+            } else {
+              generateAndRender();
+            }
+          })
+          .catch(function() {
+            generateAndRender();
+          });
+      }
+
+      /**
+       * Generate sample campaign data as fallback.
+       */
+      function generateAndRender() {
+        var data = [
+          { x: 1200, y: 34000, radius: 8,  label: 'Campaign A' },
+          { x: 800,  y: 28000, radius: 6,  label: 'Campaign B' },
+          { x: 2000, y: 52000, radius: 10, label: 'Campaign C' },
+          { x: 450,  y: 18000, radius: 5,  label: 'Campaign D' },
+          { x: 1600, y: 41000, radius: 7,  label: 'Campaign E' },
+          { x: 950,  y: 31000, radius: 6,  label: 'Campaign F' },
+          { x: 2800, y: 68000, radius: 11, label: 'Campaign G' },
+          { x: 700,  y: 22000, radius: 5,  label: 'Campaign H' },
+        ];
+        renderChart(data);
+      }
+
+      // ── Boot ────────────────────────────────────────────────────
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', loadData);
+      } else {
+        loadData();
+      }
+    })();
+  </script>
+
+</body>
+</html>

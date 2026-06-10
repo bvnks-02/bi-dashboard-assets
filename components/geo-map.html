@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Revenue by Country — Geo Map</title>
+  <link rel="stylesheet" href="../design-tokens.css">
+
+  <style>
+    /* ── Component: Revenue by Country ─────────────────────────────── */
+    .geo-card {
+      min-height: 420px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .geo-card .card-body {
+      flex: 1;
+      min-height: 0;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .geo-card .chart-container {
+      width: 100%;
+      height: 100%;
+      position: absolute;
+      inset: 0;
+    }
+
+    .geo-card .chart-container canvas {
+      display: block;
+      width: 100% !important;
+      height: 100% !important;
+    }
+
+    /* ── Skeleton / loading state ─────────────────────────────────── */
+    .geo-card .skeleton-chart {
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(
+        90deg,
+        var(--color-bg-surface, #1a1d27) 25%,
+        var(--color-bg-hover, #2a2f42) 50%,
+        var(--color-bg-surface, #1a1d27) 75%
+      );
+      background-size: 200% 100%;
+      animation: shimmer 1.5s ease infinite;
+      border-radius: var(--radius-sm, 4px);
+    }
+
+    @keyframes shimmer {
+      0%   { background-position: -200% 0; }
+      100% { background-position: 200% 0; }
+    }
+
+    /* ── Tooltip ───────────────────────────────────────────────────── */
+    .geo-tooltip {
+      position: fixed;
+      z-index: var(--z-tooltip, 300);
+      background: var(--color-bg-elevated, #232736);
+      border: 1px solid var(--color-border, #2d3248);
+      border-radius: var(--radius-md, 8px);
+      padding: var(--space-2, 8px) var(--space-3, 12px);
+      font-size: var(--text-sm, 12px);
+      color: var(--color-text-primary, #e8eaed);
+      pointer-events: none;
+      box-shadow: var(--shadow-lg);
+      max-width: 240px;
+      line-height: var(--leading-relaxed, 1.625);
+      opacity: 0;
+      transition: opacity var(--transition-fast, 150ms ease);
+      font-family: var(--font-family, 'Inter', sans-serif);
+    }
+
+    .geo-tooltip.visible {
+      opacity: 1;
+    }
+
+    .geo-tooltip .tooltip-label {
+      color: var(--color-text-tertiary, #6b7280);
+      font-size: var(--text-xs, 10px);
+    }
+
+    .geo-tooltip .tooltip-value {
+      font-weight: var(--font-semibold, 600);
+      font-family: var(--font-mono, 'JetBrains Mono', monospace);
+    }
+
+    /* ── Responsive adjustments ───────────────────────────────────── */
+    @media (max-width: 768px) {
+      .geo-card {
+        min-height: 360px;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .geo-card {
+        min-height: 300px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ── Card ─────────────────────────────────────────────────────── -->
+  <div class="card geo-card" id="geo-map-card">
+    <div class="card-header">
+      <span class="card-title">Revenue by Country</span>
+    </div>
+    <div class="card-body" style="height:340px;">
+      <div class="chart-container" id="geo-chart">
+        <canvas></canvas>
+      </div>
+      <div class="skeleton-chart" id="geo-skeleton" style="position:absolute;inset:0;z-index:1;"></div>
+    </div>
+  </div>
+
+  <!-- ── Tooltip Element ──────────────────────────────────────────── -->
+  <div class="geo-tooltip" id="geo-tooltip"></div>
+
+  <script src="../js/bi-utils.js"></script>
+
+  <script>
+    (function() {
+      'use strict';
+
+      var CHART_ID = 'geo-chart';
+      var SKELETON_ID = 'geo-skeleton';
+      var TOOLTIP_ID = 'geo-tooltip';
+      var tooltipEl = document.getElementById(TOOLTIP_ID);
+      var chartData = [];
+
+      // ── Formatting helpers ──────────────────────────────────────────
+
+      function formatCompact(n) {
+        if (n === null || n === undefined || isNaN(n)) return '\u2014';
+        if (Math.abs(n) >= 1e6) return (n / 1e6).toFixed(1) + 'M';
+        if (Math.abs(n) >= 1e3) return (n / 1e3).toFixed(1) + 'K';
+        return n.toFixed(0);
+      }
+
+      // ── Tooltip logic ───────────────────────────────────────────────
+
+      function showTooltip(e, country) {
+        if (!tooltipEl) return;
+        var html = '<div class="tooltip-label">' + country.name + ' (' + country.code + ')</div>' +
+                   '<div class="tooltip-value">' + formatCompact(country.value) + '</div>';
+        tooltipEl.innerHTML = html;
+        tooltipEl.classList.add('visible');
+
+        var tx = e.clientX + 14;
+        var ty = e.clientY - 10;
+        var rect = tooltipEl.getBoundingClientRect();
+        if (tx + rect.width > window.innerWidth - 8) tx = e.clientX - rect.width - 14;
+        if (ty + rect.height > window.innerHeight - 8) ty = e.clientY - rect.height - 10;
+        if (ty < 4) ty = 4;
+        tooltipEl.style.left = tx + 'px';
+        tooltipEl.style.top = ty + 'px';
+      }
+
+      function hideTooltip() {
+        if (tooltipEl) tooltipEl.classList.remove('visible');
+      }
+
+      // ── Canvas hit-test for bar hover ───────────────────────────────
+
+      function getCanvas(elId) {
+        var el = document.getElementById(elId);
+        if (!el) return null;
+        var canvas = el.querySelector('canvas');
+        if (!canvas) return null;
+        return canvas;
+      }
+
+      function setupHover(canvas) {
+        // Recalculate bar positions on hover
+        function handleMove(e) {
+          if (!chartData || chartData.length === 0) return;
+          if (!canvas) return;
+
+          var rect = canvas.getBoundingClientRect();
+          var w = rect.width;
+          var h = rect.height;
+          var mx = e.clientX - rect.left;
+          var my = e.clientY - rect.top;
+
+          // These must match the layout in BI.charts.bar()
+          var padLeft = 56;
+          var padRight = 24;
+          var padTop = 32;
+          var padBottom = 48;
+          var chartW = w - padLeft - padRight;
+          var chartH = h - padTop - padBottom;
+          var barCount = chartData.length;
+          var barWidth = Math.min((chartW / barCount) * 0.7, 48);
+          var gap = (chartW - barWidth * barCount) / (barCount + 1);
+
+          var hitIndex = -1;
+          for (var i = 0; i < barCount; i++) {
+            var bx = padLeft + gap + i * (barWidth + gap);
+            var bw = barWidth;
+            var bh = ((chartData[i].value - 0) / (Math.max.apply(null, chartData.map(function(d) { return d.value; })) * 1.15)) * chartH;
+            var by = padTop + chartH - bh;
+
+            if (mx >= bx && mx <= bx + bw && my >= by && my <= by + bh) {
+              hitIndex = i;
+              break;
+            }
+          }
+
+          if (hitIndex >= 0) {
+            showTooltip(e, chartData[hitIndex]);
+            canvas.style.cursor = 'pointer';
+          } else {
+            hideTooltip();
+            canvas.style.cursor = 'default';
+          }
+        }
+
+        canvas.addEventListener('mousemove', handleMove);
+        canvas.addEventListener('mouseleave', function() {
+          hideTooltip();
+          canvas.style.cursor = 'default';
+        });
+      }
+
+      // ── Render chart ────────────────────────────────────────────────
+
+      function renderChart(data) {
+        chartData = data;
+
+        // Hide skeleton
+        var skeleton = document.getElementById(SKELETON_ID);
+        if (skeleton) {
+          skeleton.style.opacity = '0';
+          skeleton.style.transition = 'opacity 0.3s ease';
+          setTimeout(function() { skeleton.remove(); }, 350);
+        }
+
+        // Map country data to format expected by BI.charts.bar()
+        // Sort by value descending (ranking), already sorted in sample data
+        var barData = data.map(function(c) {
+          return {
+            label: c.code || c.name,
+            value: c.value,
+            color: undefined, // let BI.charts assign colors
+          };
+        });
+
+        // Render using the chart engine
+        BI.charts.bar(CHART_ID, barData, {
+          animate: true,
+          cornerRadius: 4,
+        });
+
+        // Setup hover tooltip on the canvas
+        var canvas = getCanvas(CHART_ID);
+        if (canvas) {
+          setupHover(canvas);
+        }
+      }
+
+      // ── Load data ───────────────────────────────────────────────────
+
+      function loadData() {
+        fetch('../assets/sample-data.json')
+          .then(function(resp) {
+            if (!resp.ok) throw new Error('HTTP ' + resp.status);
+            return resp.json();
+          })
+          .then(function(json) {
+            var countries = json.countries;
+            if (countries && countries.length > 0) {
+              renderChart(countries);
+            } else {
+              generateAndRender();
+            }
+          })
+          .catch(function() {
+            generateAndRender();
+          });
+      }
+
+      function generateAndRender() {
+        var fallback = [
+          { name: 'United States', value: 42, code: 'US' },
+          { name: 'United Kingdom', value: 15, code: 'GB' },
+          { name: 'Germany', value: 12, code: 'DE' },
+          { name: 'France', value: 8, code: 'FR' },
+          { name: 'Japan', value: 7, code: 'JP' },
+          { name: 'Canada', value: 5, code: 'CA' },
+          { name: 'Australia', value: 4, code: 'AU' },
+          { name: 'Brazil', value: 3, code: 'BR' },
+          { name: 'India', value: 2, code: 'IN' },
+          { name: 'Spain', value: 2, code: 'ES' },
+        ];
+        renderChart(fallback);
+      }
+
+      // ── Boot ────────────────────────────────────────────────────────
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', loadData);
+      } else {
+        loadData();
+      }
+
+      // ── Resize: chart engine handles ResizeObserver internally ──────
+      // Tooltip position recalculation is handled by mousemove live.
+    })();
+  </script>
+
+</body>
+</html>

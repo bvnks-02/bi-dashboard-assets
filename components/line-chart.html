@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Revenue Trend — Line Chart</title>
+  <link rel="stylesheet" href="../design-tokens.css">
+
+  <style>
+    /* ── Component: Revenue Trend Line Chart ──────────────────────── */
+    .chart-card {
+      min-height: 320px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .chart-card .card-body {
+      flex: 1;
+      min-height: 0;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .chart-card .chart-container {
+      width: 100%;
+      height: 100%;
+      position: absolute;
+      inset: 0;
+    }
+
+    .chart-card .chart-container canvas {
+      display: block;
+      width: 100% !important;
+      height: 100% !important;
+    }
+
+    .date-range {
+      font-size: var(--text-xs, 0.625rem);
+      color: var(--color-text-tertiary, #6b7280);
+      font-weight: var(--font-medium, 500);
+      letter-spacing: var(--tracking-wide, 0.05em);
+      text-transform: uppercase;
+    }
+
+    /* ── Skeleton / loading state ─────────────────────────────────── */
+    .chart-card .skeleton-chart {
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(
+        90deg,
+        var(--color-bg-surface, #1a1d27) 25%,
+        var(--color-bg-hover, #2a2f42) 50%,
+        var(--color-bg-surface, #1a1d27) 75%
+      );
+      background-size: 200% 100%;
+      animation: shimmer 1.5s ease infinite;
+      border-radius: var(--radius-sm, 4px);
+    }
+
+    @keyframes shimmer {
+      0%   { background-position: -200% 0; }
+      100% { background-position: 200% 0; }
+    }
+
+    /* ── Responsive adjustments ───────────────────────────────────── */
+    @media (max-width: 768px) {
+      .chart-card {
+        min-height: 260px;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .chart-card {
+        min-height: 220px;
+      }
+      .chart-card .card-header {
+        flex-wrap: wrap;
+        gap: var(--space-1, 4px);
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="card chart-card" id="revenue-trend-card">
+    <div class="card-header">
+      <span class="card-title">Revenue Trend</span>
+      <span class="date-range" id="date-range-label">Jan – Dec 2024</span>
+    </div>
+    <div class="card-body">
+      <div class="chart-container" id="revenue-line-chart">
+        <canvas></canvas>
+      </div>
+      <div class="skeleton-chart" id="chart-skeleton" style="position:absolute;inset:0;z-index:1;"></div>
+    </div>
+  </div>
+
+  <script src="../js/bi-utils.js"></script>
+  <script src="../js/bi-charts.js"></script>
+
+  <script>
+    (function() {
+      'use strict';
+
+      const CHART_ID = 'revenue-line-chart';
+      const SKELETON_ID = 'chart-skeleton';
+      const CARD_ID = 'revenue-trend-card';
+
+      /**
+       * Render the line chart with the given data.
+       * Removes the skeleton overlay, then calls BI.charts.line().
+       */
+      function renderChart(data) {
+        // Hide skeleton
+        const skeleton = document.getElementById(SKELETON_ID);
+        if (skeleton) {
+          skeleton.style.opacity = '0';
+          skeleton.style.transition = 'opacity 0.3s ease';
+          setTimeout(function() { skeleton.remove(); }, 350);
+        }
+
+        // Render using the chart engine
+        BI.charts.line(CHART_ID, data, {
+          lineColor: '#4f6af5',
+          fillColor: BI.colors.hexWithAlpha('#4f6af5', 0.12),
+          showFill: true,
+          showArea: true,
+          showDots: true,
+          animate: true,
+        });
+
+        // Update date range label
+        if (data.length > 0) {
+          var firstLabel = data[0].label || '';
+          var lastLabel  = data[data.length - 1].label || '';
+          var labelEl = document.getElementById('date-range-label');
+          if (labelEl) {
+            labelEl.textContent = firstLabel + ' – ' + lastLabel;
+          }
+        }
+      }
+
+      /**
+       * Fetch sample data from the assets directory.
+       * Falls back to generated data on failure.
+       */
+      function loadData() {
+        // Attempt to fetch from the sample data file
+        fetch('../assets/sample-data.json')
+          .then(function(resp) {
+            if (!resp.ok) throw new Error('HTTP ' + resp.status);
+            return resp.json();
+          })
+          .then(function(json) {
+            var data = json.timeSeriesRevenue;
+            if (data && data.length > 0) {
+              renderChart(data);
+            } else {
+              generateAndRender();
+            }
+          })
+          .catch(function() {
+            generateAndRender();
+          });
+      }
+
+      /**
+       * Generate 12 months of sample revenue data as fallback.
+       */
+      function generateAndRender() {
+        var data = BI.data.generateTimeSeries({
+          points: 12,
+          start: '2024-01-01',
+          interval: 'month',
+          base: 1800000,
+          trend: 0.025,
+          volatility: 0.04,
+          seed: 42,
+        });
+
+        // Override labels with short month names
+        var monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+        data.forEach(function(d, i) {
+          d.label = monthNames[i] || d.label;
+        });
+
+        renderChart(data);
+      }
+
+      // ── Boot ────────────────────────────────────────────────────
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', loadData);
+      } else {
+        loadData();
+      }
+
+      // ── Resize: chart engine handles ResizeObserver internally ──
+    })();
+  </script>
+
+</body>
+</html>

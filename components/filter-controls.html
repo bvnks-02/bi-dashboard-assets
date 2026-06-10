@@ -1,0 +1,1055 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Filter Controls — BI Dashboard Component</title>
+
+  <!-- ── Design System Tokens ────────────────────────────────────────── -->
+  <link rel="stylesheet" href="../design-tokens.css" />
+
+  <style>
+    /* ==================================================================
+       Filter Controls — Component Styles
+       ================================================================== */
+
+    /* ── Demo Container ────────────────────────────────────────────── */
+    .filter-demo {
+      padding: var(--space-8);
+      max-width: 480px;
+    }
+
+    /* ── Card Wrapper ──────────────────────────────────────────────── */
+    .filter-card {
+      background: var(--color-bg-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      padding: var(--space-5);
+      transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+      animation: fadeIn 0.5s ease forwards;
+    }
+
+    .filter-card:hover {
+      border-color: var(--color-border-light);
+    }
+
+    .filter-card .card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: var(--space-5);
+    }
+
+    .filter-card .card-title {
+      font-size: var(--text-sm);
+      font-weight: var(--font-semibold);
+      color: var(--color-text-secondary);
+      text-transform: uppercase;
+      letter-spacing: var(--tracking-wide);
+    }
+
+    .filter-card .card-subtitle {
+      font-size: var(--text-xs);
+      color: var(--color-text-tertiary);
+    }
+
+    /* ── Filter Sections ───────────────────────────────────────────── */
+    .filter-section {
+      margin-bottom: var(--space-5);
+    }
+
+    .filter-section:last-of-type {
+      margin-bottom: var(--space-6);
+    }
+
+    .filter-section-label {
+      display: block;
+      font-size: var(--text-xs);
+      font-weight: var(--font-medium);
+      color: var(--color-text-tertiary);
+      text-transform: uppercase;
+      letter-spacing: var(--tracking-wide);
+      margin-bottom: var(--space-2);
+    }
+
+    .filter-section-label .filter-count-badge {
+      display: none;
+      margin-left: var(--space-2);
+      padding: 0 6px;
+      border-radius: var(--radius-full);
+      background: var(--color-accent);
+      color: #fff;
+      font-size: 10px;
+      font-weight: var(--font-semibold);
+      line-height: 1.6;
+      vertical-align: middle;
+    }
+
+    .filter-section-label .filter-count-badge.visible {
+      display: inline-block;
+    }
+
+    /* ── Date Range ────────────────────────────────────────────────── */
+    .filter-date-range {
+      display: flex;
+      gap: var(--space-3);
+      flex-wrap: wrap;
+    }
+
+    .filter-date-group {
+      flex: 1;
+      min-width: 120px;
+    }
+
+    .filter-date-group label {
+      display: block;
+      font-size: var(--text-xs);
+      color: var(--color-text-tertiary);
+      margin-bottom: var(--space-1);
+    }
+
+    .filter-date-input {
+      width: 100%;
+      padding: var(--space-2) var(--space-3);
+      background: var(--color-bg-base);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      color: var(--color-text-primary);
+      font-family: var(--font-family);
+      font-size: var(--text-sm);
+      transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+      outline: none;
+      -webkit-appearance: none;
+      appearance: none;
+    }
+
+    .filter-date-input:focus {
+      border-color: var(--color-border-focus);
+      box-shadow: 0 0 0 3px rgba(79, 106, 245, 0.15);
+    }
+
+    .filter-date-input::-webkit-calendar-picker-indicator {
+      filter: invert(0.7);
+      cursor: pointer;
+    }
+
+    /* ── Dropdown Select ───────────────────────────────────────────── */
+    .filter-select-wrapper {
+      position: relative;
+    }
+
+    .filter-select {
+      width: 100%;
+      padding: var(--space-2) var(--space-3);
+      padding-right: var(--space-8);
+      background: var(--color-bg-base);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      color: var(--color-text-primary);
+      font-family: var(--font-family);
+      font-size: var(--text-sm);
+      cursor: pointer;
+      outline: none;
+      transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+      -webkit-appearance: none;
+      appearance: none;
+    }
+
+    .filter-select:focus {
+      border-color: var(--color-border-focus);
+      box-shadow: 0 0 0 3px rgba(79, 106, 245, 0.15);
+    }
+
+    .filter-select option {
+      background: var(--color-bg-elevated);
+      color: var(--color-text-primary);
+      padding: var(--space-2);
+    }
+
+    .filter-select-wrapper::after {
+      content: '\25BC';
+      position: absolute;
+      right: var(--space-3);
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 10px;
+      color: var(--color-text-tertiary);
+      pointer-events: none;
+    }
+
+    /* ── Multi-Select Tag Buttons ──────────────────────────────────── */
+    .filter-tag-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--space-2);
+    }
+
+    .filter-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-1);
+      padding: var(--space-1) var(--space-3);
+      background: var(--color-bg-base);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-full);
+      color: var(--color-text-secondary);
+      font-size: var(--text-xs);
+      font-weight: var(--font-medium);
+      cursor: pointer;
+      transition:
+        background var(--transition-fast),
+        border-color var(--transition-fast),
+        color var(--transition-fast),
+        box-shadow var(--transition-fast);
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    .filter-tag:hover {
+      background: var(--color-bg-hover);
+      border-color: var(--color-border-light);
+      color: var(--color-text-primary);
+    }
+
+    .filter-tag.active {
+      background: rgba(79, 106, 245, 0.15);
+      border-color: var(--color-accent);
+      color: var(--color-accent-hover);
+      box-shadow: 0 0 0 1px var(--color-accent);
+    }
+
+    .filter-tag.active::before {
+      content: '\2713';
+      font-size: 10px;
+      font-weight: var(--font-bold);
+    }
+
+    /* ── Action Buttons ────────────────────────────────────────────── */
+    .filter-actions {
+      display: flex;
+      gap: var(--space-3);
+      flex-wrap: wrap;
+    }
+
+    .filter-btn {
+      flex: 1;
+      min-width: 120px;
+      padding: var(--space-2) var(--space-4);
+      border: none;
+      border-radius: var(--radius-md);
+      font-family: var(--font-family);
+      font-size: var(--text-sm);
+      font-weight: var(--font-semibold);
+      cursor: pointer;
+      transition:
+        background var(--transition-fast),
+        opacity var(--transition-fast),
+        transform var(--transition-fast);
+      outline: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: var(--space-2);
+    }
+
+    .filter-btn:active {
+      transform: scale(0.97);
+    }
+
+    .filter-btn:focus-visible {
+      box-shadow: 0 0 0 3px rgba(79, 106, 245, 0.3);
+    }
+
+    .filter-btn--primary {
+      background: var(--color-accent);
+      color: #fff;
+    }
+
+    .filter-btn--primary:hover {
+      background: var(--color-accent-hover);
+    }
+
+    .filter-btn--primary:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .filter-btn--primary.confirmed {
+      background: var(--color-success);
+    }
+
+    .filter-btn--secondary {
+      background: transparent;
+      color: var(--color-text-secondary);
+      border: 1px solid var(--color-border);
+    }
+
+    .filter-btn--secondary:hover {
+      background: var(--color-bg-hover);
+      border-color: var(--color-border-light);
+      color: var(--color-text-primary);
+    }
+
+    /* ── Filter Summary ────────────────────────────────────────────── */
+    .filter-summary {
+      display: none;
+      margin-top: var(--space-4);
+      padding: var(--space-3);
+      background: var(--color-bg-base);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      animation: fadeIn 0.3s ease forwards;
+    }
+
+    .filter-summary.visible {
+      display: block;
+    }
+
+    .filter-summary-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: var(--space-2);
+    }
+
+    .filter-summary-title {
+      font-size: var(--text-xs);
+      font-weight: var(--font-semibold);
+      color: var(--color-text-tertiary);
+      text-transform: uppercase;
+      letter-spacing: var(--tracking-wide);
+    }
+
+    .filter-summary-count {
+      font-size: var(--text-xs);
+      color: var(--color-accent);
+      font-weight: var(--font-semibold);
+    }
+
+    .filter-summary-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-1);
+    }
+
+    .filter-summary-item {
+      display: flex;
+      align-items: flex-start;
+      gap: var(--space-2);
+      font-size: var(--text-xs);
+      color: var(--color-text-secondary);
+      line-height: var(--leading-relaxed);
+    }
+
+    .filter-summary-item .summary-label {
+      flex-shrink: 0;
+      color: var(--color-text-tertiary);
+      min-width: 60px;
+    }
+
+    .filter-summary-item .summary-value {
+      color: var(--color-text-primary);
+    }
+
+    .filter-summary-item .summary-empty {
+      color: var(--color-text-tertiary);
+      font-style: italic;
+    }
+
+    /* ── Loading spinner ───────────────────────────────────────────── */
+    .filter-spinner {
+      display: none;
+      width: 14px;
+      height: 14px;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: filter-spin 0.6s linear infinite;
+    }
+
+    .filter-btn.loading .filter-spinner {
+      display: inline-block;
+    }
+
+    .filter-btn.loading .filter-btn-text {
+      display: none;
+    }
+
+    @keyframes filter-spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* ── Confirm checkmark ─────────────────────────────────────────── */
+    .filter-btn .filter-btn-check {
+      display: none;
+    }
+
+    .filter-btn.confirmed .filter-btn-text {
+      display: none;
+    }
+
+    .filter-btn.confirmed .filter-btn-check {
+      display: inline;
+    }
+
+    /* ── Responsive ────────────────────────────────────────────────── */
+    @media (max-width: 768px) {
+      .filter-demo {
+        padding: var(--space-4);
+        max-width: 100%;
+      }
+
+      .filter-card {
+        padding: var(--space-4);
+      }
+
+      .filter-date-range {
+        flex-direction: column;
+      }
+
+      .filter-date-group {
+        min-width: 0;
+      }
+
+      .filter-actions {
+        flex-direction: column;
+      }
+
+      .filter-btn {
+        min-width: 0;
+        width: 100%;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .filter-demo {
+        padding: var(--space-3);
+      }
+
+      .filter-card {
+        padding: var(--space-3);
+      }
+
+      .filter-tag-group {
+        gap: var(--space-1);
+      }
+
+      .filter-tag {
+        padding: var(--space-1) var(--space-2);
+        font-size: 11px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ── Demo Container ────────────────────────────────────────────── -->
+  <div class="filter-demo" id="filter-demo-root">
+    <!-- Rendered by JS -->
+  </div>
+
+  <!-- ── Utility Library ──────────────────────────────────────────── -->
+  <script src="../js/bi-utils.js"></script>
+
+  <script>
+    /* ==================================================================
+       BI Dashboard — Filter Controls Component
+       ================================================================== */
+
+    (function() {
+      'use strict';
+
+      const BI = window.BI || {};
+      BI.components = BI.components || {};
+
+      /**
+       * Creates a Filter Controls widget.
+       * @param {object}   opts
+       * @param {string}   [opts.container]     - CSS selector for mount point (default '#filter-demo-root')
+       * @param {boolean}  [opts.autoMount]     - Auto-mount to container (default true)
+       * @param {object}   [opts.initial]       - Initial filter values
+       * @param {string}   [opts.initial.dateFrom]
+       * @param {string}   [opts.initial.dateTo]
+       * @param {string[]} [opts.initial.regions]
+       * @param {string[]} [opts.initial.categories]
+       * @param {function} [opts.onApply]       - Callback when Apply is clicked (receives state)
+       * @param {function} [opts.onReset]       - Callback when Reset is clicked
+       * @returns {object} { element, state, mount, destroy }
+       */
+      function filterControls(opts) {
+        opts = opts || {};
+
+        // ── Configuration ────────────────────────────────────────────
+        const container = opts.container || '#filter-demo-root';
+        const autoMount = opts.autoMount !== false;
+
+        const REGION_OPTIONS = [
+          { value: 'north-america', label: 'North America' },
+          { value: 'south-america', label: 'South America' },
+          { value: 'europe',        label: 'Europe' },
+          { value: 'asia-pacific',  label: 'Asia Pacific' },
+          { value: 'middle-east',   label: 'Middle East' },
+          { value: 'africa',        label: 'Africa' },
+        ];
+
+        const CATEGORY_OPTIONS = [
+          { value: 'electronics',   label: 'Electronics' },
+          { value: 'clothing',      label: 'Clothing' },
+          { value: 'home-garden',   label: 'Home & Garden' },
+          { value: 'books',         label: 'Books' },
+          { value: 'sports',        label: 'Sports' },
+          { value: 'food-beverage', label: 'Food & Beverage' },
+          { value: 'automotive',    label: 'Automotive' },
+          { value: 'health-beauty', label: 'Health & Beauty' },
+        ];
+
+        // ── State ────────────────────────────────────────────────────
+        const state = {
+          dateFrom:   (opts.initial && opts.initial.dateFrom)   || '',
+          dateTo:     (opts.initial && opts.initial.dateTo)     || '',
+          regions:    (opts.initial && opts.initial.regions)    || [],
+          categories: (opts.initial && opts.initial.categories) || [],
+          applied:    false,
+          applying:   false,
+        };
+
+        let applyTimer = null;
+
+        // ── Helpers ──────────────────────────────────────────────────
+        function isActiveFilter(key) {
+          if (key === 'dateFrom')  return !!state.dateFrom;
+          if (key === 'dateTo')    return !!state.dateTo;
+          if (key === 'regions')   return state.regions.length > 0;
+          if (key === 'categories') return state.categories.length > 0;
+          return false;
+        }
+
+        function activeFilterCount() {
+          let count = 0;
+          if (state.dateFrom) count++;
+          if (state.dateTo) count++;
+          count += state.regions.length;
+          count += state.categories.length;
+          return count;
+        }
+
+        function getRegionLabel(value) {
+          const opt = REGION_OPTIONS.find(function(r) { return r.value === value; });
+          return opt ? opt.label : value;
+        }
+
+        function getCategoryLabel(value) {
+          const opt = CATEGORY_OPTIONS.find(function(c) { return c.value === value; });
+          return opt ? opt.label : value;
+        }
+
+        function formatList(arr, max) {
+          if (!arr || arr.length === 0) return '';
+          max = max || 3;
+          if (arr.length <= max) return arr.join(', ');
+          return arr.slice(0, max).join(', ') + ' +' + (arr.length - max) + ' more';
+        }
+
+        // ── Build DOM ────────────────────────────────────────────────
+        var root = document.createElement('div');
+        root.className = 'filter-card';
+        root.setAttribute('role', 'search');
+        root.setAttribute('aria-label', 'Dashboard filters');
+
+        // ── Header ──────────────────────────────────────────────────
+        var header = document.createElement('div');
+        header.className = 'card-header';
+
+        var title = document.createElement('span');
+        title.className = 'card-title';
+        title.textContent = 'Filters';
+
+        var headerRight = document.createElement('span');
+        headerRight.className = 'card-subtitle';
+        headerRight.textContent = 'Refine dashboard data';
+
+        header.appendChild(title);
+        header.appendChild(headerRight);
+        root.appendChild(header);
+
+        // ── Date Range Section ──────────────────────────────────────
+        var dateSection = document.createElement('div');
+        dateSection.className = 'filter-section';
+
+        var dateLabel = document.createElement('span');
+        dateLabel.className = 'filter-section-label';
+        dateLabel.textContent = 'Date Range';
+
+        var dateRange = document.createElement('div');
+        dateRange.className = 'filter-date-range';
+
+        // From
+        var fromGroup = document.createElement('div');
+        fromGroup.className = 'filter-date-group';
+
+        var fromLabel = document.createElement('label');
+        fromLabel.setAttribute('for', 'filter-date-from');
+        fromLabel.textContent = 'From';
+
+        var fromInput = document.createElement('input');
+        fromInput.type = 'date';
+        fromInput.id = 'filter-date-from';
+        fromInput.className = 'filter-date-input';
+        fromInput.value = state.dateFrom;
+
+        fromGroup.appendChild(fromLabel);
+        fromGroup.appendChild(fromInput);
+        dateRange.appendChild(fromGroup);
+
+        // To
+        var toGroup = document.createElement('div');
+        toGroup.className = 'filter-date-group';
+
+        var toLabel = document.createElement('label');
+        toLabel.setAttribute('for', 'filter-date-to');
+        toLabel.textContent = 'To';
+
+        var toInput = document.createElement('input');
+        toInput.type = 'date';
+        toInput.id = 'filter-date-to';
+        toInput.className = 'filter-date-input';
+        toInput.value = state.dateTo;
+
+        toGroup.appendChild(toLabel);
+        toGroup.appendChild(toInput);
+        dateRange.appendChild(toGroup);
+
+        dateSection.appendChild(dateLabel);
+        dateSection.appendChild(dateRange);
+        root.appendChild(dateSection);
+
+        // ── Region Section ──────────────────────────────────────────
+        var regionSection = document.createElement('div');
+        regionSection.className = 'filter-section';
+
+        var regionLabel = document.createElement('span');
+        regionLabel.className = 'filter-section-label';
+        regionLabel.textContent = 'Region / Country';
+
+        var regionSelectWrapper = document.createElement('div');
+        regionSelectWrapper.className = 'filter-select-wrapper';
+
+        var regionSelect = document.createElement('select');
+        regionSelect.id = 'filter-region';
+        regionSelect.className = 'filter-select';
+        regionSelect.multiple = false;
+        regionSelect.setAttribute('aria-label', 'Select region or country');
+
+        // Default option
+        var defaultOption = document.createElement('option');
+        defaultOption.value = '';
+        defaultOption.textContent = 'All Regions';
+        regionSelect.appendChild(defaultOption);
+
+        REGION_OPTIONS.forEach(function(region) {
+          var opt = document.createElement('option');
+          opt.value = region.value;
+          opt.textContent = region.label;
+          if (state.regions.indexOf(region.value) !== -1) {
+            opt.selected = true;
+          }
+          regionSelect.appendChild(opt);
+        });
+
+        regionSelectWrapper.appendChild(regionSelect);
+        regionSection.appendChild(regionLabel);
+        regionSection.appendChild(regionSelectWrapper);
+        root.appendChild(regionSection);
+
+        // ── Product Category Section ────────────────────────────────
+        var catSection = document.createElement('div');
+        catSection.className = 'filter-section';
+
+        var catLabel = document.createElement('span');
+        catLabel.className = 'filter-section-label';
+
+        var catLabelText = document.createTextNode('Product Category');
+        var catBadge = document.createElement('span');
+        catBadge.className = 'filter-count-badge';
+        catBadge.textContent = '0';
+
+        catLabel.appendChild(catLabelText);
+        catLabel.appendChild(catBadge);
+        catSection.appendChild(catLabel);
+
+        var tagGroup = document.createElement('div');
+        tagGroup.className = 'filter-tag-group';
+        tagGroup.setAttribute('role', 'group');
+        tagGroup.setAttribute('aria-label', 'Product categories');
+
+        var tagButtons = [];
+
+        CATEGORY_OPTIONS.forEach(function(cat) {
+          var btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = 'filter-tag';
+          btn.dataset.value = cat.value;
+          btn.textContent = cat.label;
+          btn.setAttribute('role', 'checkbox');
+          btn.setAttribute('aria-checked', 'false');
+
+          if (state.categories.indexOf(cat.value) !== -1) {
+            btn.classList.add('active');
+            btn.setAttribute('aria-checked', 'true');
+          }
+
+          tagGroup.appendChild(btn);
+          tagButtons.push(btn);
+        });
+
+        catSection.appendChild(tagGroup);
+        root.appendChild(catSection);
+
+        // ── Action Buttons ──────────────────────────────────────────
+        var actions = document.createElement('div');
+        actions.className = 'filter-actions';
+
+        // Apply button
+        var applyBtn = document.createElement('button');
+        applyBtn.type = 'button';
+        applyBtn.className = 'filter-btn filter-btn--primary';
+        applyBtn.id = 'filter-apply';
+        applyBtn.setAttribute('aria-label', 'Apply filters');
+
+        var applySpinner = document.createElement('span');
+        applySpinner.className = 'filter-spinner';
+
+        var applyText = document.createElement('span');
+        applyText.className = 'filter-btn-text';
+        applyText.textContent = 'Apply Filters';
+
+        var applyCheck = document.createElement('span');
+        applyCheck.className = 'filter-btn-check';
+        applyCheck.textContent = '\u2713 Applied';
+
+        applyBtn.appendChild(applySpinner);
+        applyBtn.appendChild(applyText);
+        applyBtn.appendChild(applyCheck);
+        actions.appendChild(applyBtn);
+
+        // Reset button
+        var resetBtn = document.createElement('button');
+        resetBtn.type = 'button';
+        resetBtn.className = 'filter-btn filter-btn--secondary';
+        resetBtn.id = 'filter-reset';
+        resetBtn.textContent = 'Reset';
+        resetBtn.setAttribute('aria-label', 'Reset all filters to defaults');
+        actions.appendChild(resetBtn);
+
+        root.appendChild(actions);
+
+        // ── Filter Summary ──────────────────────────────────────────
+        var summary = document.createElement('div');
+        summary.className = 'filter-summary';
+        summary.id = 'filter-summary';
+        summary.setAttribute('aria-live', 'polite');
+
+        var summaryHeader = document.createElement('div');
+        summaryHeader.className = 'filter-summary-header';
+
+        var summaryTitle = document.createElement('span');
+        summaryTitle.className = 'filter-summary-title';
+        summaryTitle.textContent = 'Active Filters';
+
+        var summaryCount = document.createElement('span');
+        summaryCount.className = 'filter-summary-count';
+        summaryCount.id = 'filter-summary-count';
+        summaryCount.textContent = '0 active';
+
+        summaryHeader.appendChild(summaryTitle);
+        summaryHeader.appendChild(summaryCount);
+
+        var summaryList = document.createElement('ul');
+        summaryList.className = 'filter-summary-list';
+        summaryList.id = 'filter-summary-list';
+
+        summary.appendChild(summaryHeader);
+        summary.appendChild(summaryList);
+        root.appendChild(summary);
+
+        // ── Mount ────────────────────────────────────────────────────
+        function mount() {
+          var target = document.querySelector(container);
+          if (target) {
+            target.innerHTML = '';
+            target.appendChild(root);
+            bindEvents();
+            updateSummary();
+          }
+        }
+
+        // ── Events ───────────────────────────────────────────────────
+        function bindEvents() {
+          // Date From
+          fromInput.addEventListener('change', function() {
+            state.dateFrom = fromInput.value;
+            state.applied = false;
+            applyBtn.classList.remove('confirmed');
+            updateSummary();
+          });
+
+          // Date To
+          toInput.addEventListener('change', function() {
+            state.dateTo = toInput.value;
+            state.applied = false;
+            applyBtn.classList.remove('confirmed');
+            updateSummary();
+          });
+
+          // Region select
+          regionSelect.addEventListener('change', function() {
+            var selected = [];
+            for (var i = 0; i < regionSelect.options.length; i++) {
+              var opt = regionSelect.options[i];
+              if (opt.selected && opt.value) {
+                selected.push(opt.value);
+              }
+            }
+            state.regions = selected;
+            state.applied = false;
+            applyBtn.classList.remove('confirmed');
+            updateSummary();
+          });
+
+          // Category tag buttons
+          tagButtons.forEach(function(btn) {
+            btn.addEventListener('click', function() {
+              var val = btn.dataset.value;
+              var idx = state.categories.indexOf(val);
+              if (idx === -1) {
+                state.categories.push(val);
+                btn.classList.add('active');
+                btn.setAttribute('aria-checked', 'true');
+              } else {
+                state.categories.splice(idx, 1);
+                btn.classList.remove('active');
+                btn.setAttribute('aria-checked', 'false');
+              }
+              state.applied = false;
+              applyBtn.classList.remove('confirmed');
+              updateSummary();
+            });
+          });
+
+          // Apply button
+          applyBtn.addEventListener('click', function() {
+            if (applyBtn.classList.contains('loading') || applyBtn.classList.contains('confirmed')) return;
+
+            applyBtn.classList.add('loading');
+
+            // Simulate async filter application
+            setTimeout(function() {
+              applyBtn.classList.remove('loading');
+              applyBtn.classList.add('confirmed');
+              state.applied = true;
+
+              if (opts.onApply) {
+                opts.onApply(getSnapshot());
+              }
+
+              updateSummary();
+            }, 600);
+          });
+
+          // Reset button
+          resetBtn.addEventListener('click', function() {
+            // Clear state
+            state.dateFrom = '';
+            state.dateTo = '';
+            state.regions = [];
+            state.categories = [];
+            state.applied = false;
+            state.applying = false;
+
+            // Reset UI
+            fromInput.value = '';
+            toInput.value = '';
+            regionSelect.value = '';
+
+            tagButtons.forEach(function(btn) {
+              btn.classList.remove('active');
+              btn.setAttribute('aria-checked', 'false');
+            });
+
+            applyBtn.classList.remove('confirmed', 'loading');
+            applyBtn.disabled = false;
+
+            if (opts.onReset) {
+              opts.onReset();
+            }
+
+            updateSummary();
+          });
+        }
+
+        // ── Summary Update ───────────────────────────────────────────
+        function updateSummary() {
+          var items = [];
+          var activeCount = 0;
+
+          // Date range
+          if (state.dateFrom && state.dateTo) {
+            items.push({
+              label: 'Date',
+              value: state.dateFrom + ' \u2013 ' + state.dateTo,
+            });
+            activeCount++;
+          } else if (state.dateFrom) {
+            items.push({
+              label: 'Date',
+              value: 'From ' + state.dateFrom,
+            });
+            activeCount++;
+          } else if (state.dateTo) {
+            items.push({
+              label: 'Date',
+              value: 'Until ' + state.dateTo,
+            });
+            activeCount++;
+          } else {
+            items.push({
+              label: 'Date',
+              value: '',
+              empty: true,
+            });
+          }
+
+          // Regions
+          if (state.regions.length > 0) {
+            var regionLabels = state.regions.map(getRegionLabel);
+            items.push({
+              label: 'Region',
+              value: formatList(regionLabels, 3),
+            });
+            activeCount += state.regions.length;
+          } else {
+            items.push({
+              label: 'Region',
+              value: '',
+              empty: true,
+            });
+          }
+
+          // Categories
+          if (state.categories.length > 0) {
+            var catLabels = state.categories.map(getCategoryLabel);
+            items.push({
+              label: 'Category',
+              value: formatList(catLabels, 3),
+            });
+            activeCount += state.categories.length;
+          } else {
+            items.push({
+              label: 'Category',
+              value: '',
+              empty: true,
+            });
+          }
+
+          // Update category badge
+          if (state.categories.length > 0) {
+            catBadge.textContent = state.categories.length;
+            catBadge.classList.add('visible');
+          } else {
+            catBadge.classList.remove('visible');
+          }
+
+          // Render summary list
+          summaryList.innerHTML = '';
+
+          items.forEach(function(item) {
+            var li = document.createElement('li');
+            li.className = 'filter-summary-item';
+
+            var labelSpan = document.createElement('span');
+            labelSpan.className = 'summary-label';
+            labelSpan.textContent = item.label;
+
+            var valueSpan = document.createElement('span');
+            if (item.empty) {
+              valueSpan.className = 'summary-empty';
+              valueSpan.textContent = 'Not set';
+            } else {
+              valueSpan.className = 'summary-value';
+              valueSpan.textContent = item.value;
+            }
+
+            li.appendChild(labelSpan);
+            li.appendChild(valueSpan);
+            summaryList.appendChild(li);
+          });
+
+          // Show/hide summary
+          if (activeCount > 0 || state.applied) {
+            summary.classList.add('visible');
+          } else {
+            summary.classList.remove('visible');
+          }
+
+          // Update count
+          summaryCount.textContent = activeCount + ' active';
+        }
+
+        // ── Snapshot ─────────────────────────────────────────────────
+        function getSnapshot() {
+          return {
+            dateFrom:   state.dateFrom,
+            dateTo:     state.dateTo,
+            regions:    state.regions.slice(),
+            categories: state.categories.slice(),
+            applied:    state.applied,
+            totalActiveFilters: activeFilterCount(),
+          };
+        }
+
+        // ── Destroy ──────────────────────────────────────────────────
+        function destroy() {
+          if (applyTimer) clearTimeout(applyTimer);
+          if (root.parentNode) root.parentNode.removeChild(root);
+        }
+
+        // ── Auto-mount ───────────────────────────────────────────────
+        if (autoMount) {
+          mount();
+        }
+
+        return {
+          element: root,
+          state: state,
+          getSnapshot: getSnapshot,
+          mount: mount,
+          destroy: destroy,
+          updateSummary: updateSummary,
+        };
+      }
+
+      // ── Register Component ─────────────────────────────────────────
+      BI.components.filterControls = filterControls;
+
+      // ── Auto-Init on DOMContentLoaded (for standalone demo) ───────
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', function() {
+          if (document.querySelector('#filter-demo-root')) {
+            filterControls({ container: '#filter-demo-root' });
+          }
+        });
+      } else {
+        if (document.querySelector('#filter-demo-root')) {
+          filterControls({ container: '#filter-demo-root' });
+        }
+      }
+
+      window.BI = BI;
+
+    })();
+  </script>
+</body>
+</html>

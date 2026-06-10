@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>KPI Card — BI Dashboard Component</title>
+
+  <!-- ── Design System Tokens ────────────────────────────────────────── -->
+  <link rel="stylesheet" href="../design-tokens.css" />
+
+  <style>
+    /* ==================================================================
+       KPI Card — Component Styles
+       ================================================================== */
+
+    /* ── Container (for demo grid) ─────────────────────────────────── */
+    .kpi-card-demo {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--space-5);
+      padding: var(--space-8);
+      align-items: flex-start;
+    }
+
+    /* ── KPI Card ──────────────────────────────────────────────────── */
+    .kpi-card {
+      position: relative;
+      width: 280px;
+      min-width: 240px;
+      background: var(--color-bg-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      padding: var(--space-5);
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-3);
+      transition:
+        border-color var(--transition-fast),
+        box-shadow var(--transition-fast),
+        transform var(--transition-fast);
+      animation: fadeIn 0.5s ease forwards;
+      overflow: hidden;
+    }
+
+    .kpi-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: transparent;
+      transition: background var(--transition-normal);
+    }
+
+    .kpi-card:hover {
+      border-color: var(--color-border-light);
+      box-shadow: var(--shadow-glow);
+      transform: translateY(-2px);
+    }
+
+    .kpi-card:hover::before {
+      background: var(--color-accent);
+    }
+
+    /* ── Card Header (icon area) ───────────────────────────────────── */
+    .kpi-card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      min-height: 20px;
+    }
+
+    .kpi-card-title {
+      font-size: var(--text-sm);
+      font-weight: var(--font-semibold);
+      color: var(--color-text-secondary);
+      text-transform: uppercase;
+      letter-spacing: var(--tracking-wide);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .kpi-card-icon {
+      flex-shrink: 0;
+      width: 32px;
+      height: 32px;
+      border-radius: var(--radius-md);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: var(--text-lg);
+      background: rgba(79, 106, 245, 0.1);
+      color: var(--color-accent);
+      margin-left: var(--space-2);
+    }
+
+    /* ── Main Value ────────────────────────────────────────────────── */
+    .kpi-card-value-row {
+      display: flex;
+      align-items: baseline;
+      gap: var(--space-3);
+      flex-wrap: wrap;
+    }
+
+    .kpi-card-value {
+      font-size: var(--text-3xl);
+      font-weight: var(--font-bold);
+      color: var(--color-text-primary);
+      font-family: var(--font-mono);
+      line-height: var(--leading-tight);
+      letter-spacing: var(--tracking-tight);
+      transition: color var(--transition-fast);
+    }
+
+    .kpi-card-prefix {
+      font-size: var(--text-lg);
+      font-weight: var(--font-medium);
+      color: var(--color-text-tertiary);
+      font-family: var(--font-mono);
+    }
+
+    .kpi-card-suffix {
+      font-size: var(--text-sm);
+      font-weight: var(--font-medium);
+      color: var(--color-text-tertiary);
+    }
+
+    /* ── Change / Trend Indicator ──────────────────────────────────── */
+    .kpi-card-trend {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-1);
+      font-size: var(--text-sm);
+      font-weight: var(--font-semibold);
+      font-family: var(--font-mono);
+      padding: 2px 8px;
+      border-radius: var(--radius-full);
+      line-height: 1.4;
+      white-space: nowrap;
+    }
+
+    .kpi-card-trend--positive {
+      background: rgba(34, 197, 94, 0.12);
+      color: var(--color-success);
+    }
+
+    .kpi-card-trend--negative {
+      background: rgba(239, 68, 68, 0.12);
+      color: var(--color-danger);
+    }
+
+    .kpi-card-trend--neutral {
+      background: rgba(154, 160, 176, 0.12);
+      color: var(--color-text-secondary);
+    }
+
+    .kpi-card-trend-arrow {
+      font-size: var(--text-xs);
+      line-height: 1;
+    }
+
+    /* ── Context Label ─────────────────────────────────────────────── */
+    .kpi-card-context {
+      font-size: var(--text-xs);
+      color: var(--color-text-tertiary);
+      margin-top: calc(-1 * var(--space-1));
+    }
+
+    /* ── Sparkline Area ────────────────────────────────────────────── */
+    .kpi-card-sparkline {
+      width: 100%;
+      height: 48px;
+      margin-top: var(--space-1);
+      position: relative;
+    }
+
+    .kpi-card-sparkline svg {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .kpi-card-sparkline-area {
+      fill-opacity: 0.12;
+    }
+
+    .kpi-card-sparkline-line {
+      fill: none;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    /* ── Progress Bar (attainment) ─────────────────────────────────── */
+    .kpi-card-progress {
+      margin-top: var(--space-1);
+    }
+
+    .kpi-card-progress-bar {
+      width: 100%;
+      height: 4px;
+      background: var(--color-bg-hover);
+      border-radius: var(--radius-full);
+      overflow: hidden;
+    }
+
+    .kpi-card-progress-fill {
+      height: 100%;
+      border-radius: var(--radius-full);
+      transition: width var(--transition-slow) ease;
+      background: var(--color-accent);
+    }
+
+    .kpi-card-progress-label {
+      display: flex;
+      justify-content: space-between;
+      font-size: var(--text-xs);
+      color: var(--color-text-tertiary);
+      margin-top: var(--space-1);
+    }
+
+    /* ── Attainment Badge ──────────────────────────────────────────── */
+    .kpi-card-attainment {
+      font-size: var(--text-xs);
+      font-weight: var(--font-medium);
+      color: var(--color-text-tertiary);
+    }
+
+    /* ── Responsive ────────────────────────────────────────────────── */
+    @media (max-width: 640px) {
+      .kpi-card-demo {
+        padding: var(--space-4);
+        justify-content: center;
+      }
+
+      .kpi-card {
+        width: 100%;
+        min-width: 0;
+        max-width: 360px;
+      }
+
+      .kpi-card-value {
+        font-size: var(--text-2xl);
+      }
+    }
+
+    @media (max-width: 480px) {
+      .kpi-card {
+        padding: var(--space-4);
+      }
+
+      .kpi-card-value {
+        font-size: var(--text-xl);
+      }
+
+      .kpi-card-sparkline {
+        height: 36px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ── Demo Grid ────────────────────────────────────────────────── -->
+  <div class="kpi-card-demo" id="kpi-demo-grid">
+    <!-- Cards will be rendered by JS -->
+  </div>
+
+  <!-- ── Utility Library ──────────────────────────────────────────── -->
+  <script src="../js/bi-utils.js"></script>
+
+  <script>
+    /* ==================================================================
+       BI Dashboard — KPI Card Component
+       ================================================================== */
+
+    (function() {
+      'use strict';
+
+      const BI = window.BI || {};
+      BI.components = BI.components || {};
+
+      /**
+       * Renders an SVG sparkline inside a container element.
+       * @param {HTMLElement} container - The element to hold the SVG.
+       * @param {number[]}    data      - Array of numeric values.
+       * @param {object}      opts      - { color, areaColor, height }
+       */
+      function renderSparkline(container, data, opts = {}) {
+        if (!data || data.length < 2) return;
+
+        const color     = opts.color     || 'var(--color-accent)';
+        const areaColor = opts.areaColor || 'var(--color-accent)';
+        const svgW      = container.clientWidth || 240;
+        const svgH      = opts.height    || 48;
+        const pad       = 2;
+
+        const min = Math.min(...data);
+        const max = Math.max(...data);
+        const range = max - min || 1;
+
+        const w = svgW - pad * 2;
+        const h = svgH - pad * 2;
+
+        // Build path strings
+        const points = data.map((v, i) => {
+          const x = pad + (i / (data.length - 1)) * w;
+          const y = pad + h - ((v - min) / range) * h;
+          return { x, y };
+        });
+
+        const lineD = points.map((p, i) =>
+          (i === 0 ? 'M' : 'L') + p.x.toFixed(1) + ',' + p.y.toFixed(1)
+        ).join(' ');
+
+        const areaD = lineD +
+          ' L' + (pad + w).toFixed(1) + ',' + (pad + h).toFixed(1) +
+          ' L' + pad.toFixed(1) + ',' + (pad + h).toFixed(1) + ' Z';
+
+        const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        svg.setAttribute('viewBox', '0 0 ' + svgW + ' ' + svgH);
+        svg.setAttribute('preserveAspectRatio', 'none');
+        svg.style.width = '100%';
+        svg.style.height = '100%';
+
+        // Area fill
+        const area = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        area.setAttribute('d', areaD);
+        area.setAttribute('fill', areaColor);
+        area.classList.add('kpi-card-sparkline-area');
+        svg.appendChild(area);
+
+        // Line
+        const line = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        line.setAttribute('d', lineD);
+        line.setAttribute('stroke', color);
+        line.classList.add('kpi-card-sparkline-line');
+        svg.appendChild(line);
+
+        // Gradient on area if we can resolve the color
+        // (We skip gradient for simplicity — using CSS class fill-opacity)
+
+        container.innerHTML = '';
+        container.appendChild(svg);
+      }
+
+      /**
+       * Create a KPI card element.
+       * @param {object} cfg - Configuration
+       * @param {string}   cfg.label         - Metric title
+       * @param {number}   cfg.value         - Current value
+       * @param {string}   cfg.format        - 'currency'|'percentage'|'integer'|'compact'|'fixed'
+       * @param {number}   [cfg.change]      - Percentage change (e.g., 12.5 for +12.5%)
+       * @param {string}   [cfg.changeLabel] - Context, e.g. 'vs last month'
+       * @param {number}   [cfg.target]      - Target value for attainment
+       * @param {number[]} [cfg.sparkline]   - Array of values for sparkline
+       * @param {string}   [cfg.prefix]      - Prefix text (e.g., '$')
+       * @param {string}   [cfg.suffix]      - Suffix text (e.g., 'users')
+       * @param {string}   [cfg.currency]    - Currency code for currency format
+       * @param {number}   [cfg.decimals]    - Decimal places
+       * @param {string}   [cfg.icon]        - Emoji or text icon
+       * @param {string}   [cfg.color]       - Accent color override
+       * @param {boolean}  [cfg.goodIsUp]    - Whether positive change is 'good' (default: true)
+       * @returns {HTMLElement} The KPI card element
+       */
+      function kpiCard(cfg) {
+        // ── Defaults ────────────────────────────────────────────────
+        cfg = Object.assign({
+          label:         'Metric',
+          value:         0,
+          format:        'compact',
+          change:        0,
+          changeLabel:   '',
+          target:        null,
+          sparkline:     null,
+          prefix:        '',
+          suffix:        '',
+          currency:      'USD',
+          decimals:      1,
+          icon:          '',
+          color:         'var(--color-accent)',
+          goodIsUp:      true,
+        }, cfg);
+
+        // ── Root element ────────────────────────────────────────────
+        const card = document.createElement('div');
+        card.className = 'kpi-card';
+        card.style.setProperty('--kpi-accent', cfg.color);
+
+        // ── Header ──────────────────────────────────────────────────
+        const header = document.createElement('div');
+        header.className = 'kpi-card-header';
+
+        const title = document.createElement('span');
+        title.className = 'kpi-card-title';
+        title.textContent = cfg.label;
+
+        header.appendChild(title);
+
+        if (cfg.icon) {
+          const iconEl = document.createElement('span');
+          iconEl.className = 'kpi-card-icon';
+          iconEl.textContent = cfg.icon;
+          header.appendChild(iconEl);
+        }
+
+        card.appendChild(header);
+
+        // ── Value Row ───────────────────────────────────────────────
+        const valueRow = document.createElement('div');
+        valueRow.className = 'kpi-card-value-row';
+
+        // Formatted value
+        const valueEl = document.createElement('span');
+        valueEl.className = 'kpi-card-value';
+
+        // Format the value
+        let formattedValue;
+        switch (cfg.format) {
+          case 'currency':
+            formattedValue = BI.format.currency(cfg.value, cfg.currency, cfg.decimals);
+            break;
+          case 'percentage':
+            formattedValue = cfg.value.toFixed(cfg.decimals) + '%';
+            break;
+          case 'integer':
+            formattedValue = BI.format.integer(cfg.value);
+            break;
+          case 'compact':
+            formattedValue = BI.format.compact(cfg.value, cfg.decimals);
+            break;
+          case 'fixed':
+            formattedValue = cfg.value.toFixed(cfg.decimals);
+            break;
+          default:
+            formattedValue = BI.format.compact(cfg.value, cfg.decimals);
+        }
+
+        valueEl.textContent = formattedValue;
+        valueRow.appendChild(valueEl);
+
+        // ── Trend Badge ─────────────────────────────────────────────
+        if (cfg.change !== null && cfg.change !== undefined) {
+          const isGood = cfg.goodIsUp ? cfg.change >= 0 : cfg.change <= 0;
+          let trendClass = 'kpi-card-trend--neutral';
+          if (cfg.change > 0) trendClass = 'kpi-card-trend--positive';
+          else if (cfg.change < 0) trendClass = 'kpi-card-trend--negative';
+
+          const trend = document.createElement('span');
+          trend.className = 'kpi-card-trend ' + trendClass;
+
+          const arrow = document.createElement('span');
+          arrow.className = 'kpi-card-trend-arrow';
+          arrow.textContent = cfg.change > 0 ? '\u25B2' : cfg.change < 0 ? '\u25BC' : '\u25C6';
+          trend.appendChild(arrow);
+
+          const pctText = document.createTextNode(
+            ' ' + (cfg.change > 0 ? '+' : '') + cfg.change.toFixed(1) + '%'
+          );
+          trend.appendChild(pctText);
+
+          valueRow.appendChild(trend);
+        }
+
+        card.appendChild(valueRow);
+
+        // ── Change Context Label ────────────────────────────────────
+        if (cfg.changeLabel) {
+          const context = document.createElement('div');
+          context.className = 'kpi-card-context';
+          context.textContent = cfg.changeLabel;
+          card.appendChild(context);
+        }
+
+        // ── Progress / Attainment ───────────────────────────────────
+        if (cfg.target !== null && cfg.target !== undefined && cfg.target > 0) {
+          const pct = Math.min(100, (cfg.value / cfg.target) * 100);
+
+          const progress = document.createElement('div');
+          progress.className = 'kpi-card-progress';
+
+          const bar = document.createElement('div');
+          bar.className = 'kpi-card-progress-bar';
+
+          const fill = document.createElement('div');
+          fill.className = 'kpi-card-progress-fill';
+          fill.style.width = pct.toFixed(1) + '%';
+          // Color the bar based on attainment
+          if (pct >= 100) fill.style.background = 'var(--color-success)';
+          else if (pct >= 80) fill.style.background = 'var(--color-accent)';
+          else if (pct >= 60) fill.style.background = 'var(--color-warning)';
+          else fill.style.background = 'var(--color-danger)';
+
+          bar.appendChild(fill);
+          progress.appendChild(bar);
+
+          const label = document.createElement('div');
+          label.className = 'kpi-card-progress-label';
+          label.innerHTML =
+            '<span>Target: ' + BI.format.compact(cfg.target) + '</span>' +
+            '<span class="kpi-card-attainment">' + pct.toFixed(0) + '%</span>';
+          progress.appendChild(label);
+
+          card.appendChild(progress);
+        }
+
+        // ── Sparkline ───────────────────────────────────────────────
+        if (cfg.sparkline && cfg.sparkline.length >= 2) {
+          const sparkContainer = document.createElement('div');
+          sparkContainer.className = 'kpi-card-sparkline';
+          card.appendChild(sparkContainer);
+
+          // Use requestAnimationFrame to ensure layout is ready
+          requestAnimationFrame(function() {
+            renderSparkline(sparkContainer, cfg.sparkline, {
+              color: cfg.color,
+              areaColor: cfg.color,
+              height: 48,
+            });
+          });
+        }
+
+        return card;
+      }
+
+      // ── Register component ────────────────────────────────────────
+      BI.components.kpiCard = kpiCard;
+
+      // ── Export ────────────────────────────────────────────────────
+      window.BI = BI;
+
+      // ══════════════════════════════════════════════════════════════
+      //  Sample Data — Rendered on Page Load
+      // ══════════════════════════════════════════════════════════════
+
+      document.addEventListener('DOMContentLoaded', function() {
+        const grid = document.getElementById('kpi-demo-grid');
+        if (!grid) return;
+
+        // Generate sparkline data using BI utility if available
+        var sparkRev, sparkUsers, sparkConv, sparkCsat;
+        if (BI.data && BI.data.generateTimeSeries) {
+          sparkRev   = BI.data.generateTimeSeries({ points: 20, base: 1800, trend: 0.02, volatility: 0.04, seed: 101 }).map(function(d) { return d.value; });
+          sparkUsers = BI.data.generateTimeSeries({ points: 20, base: 38, trend: 0.015, volatility: 0.06, seed: 202 }).map(function(d) { return d.value; });
+          sparkConv  = BI.data.generateTimeSeries({ points: 20, base: 3.0, trend: 0.005, volatility: 0.02, seed: 303 }).map(function(d) { return d.value; });
+          sparkCsat  = BI.data.generateTimeSeries({ points: 20, base: 4.4, trend: 0.003, volatility: 0.015, seed: 404 }).map(function(d) { return d.value; });
+        } else {
+          // Fallback static sparkline data
+          sparkRev   = [1850, 1920, 2010, 2150, 2230, 2310, 2420, 2380, 2560, 2680, 2750, 2845, 2900, 2880, 3010, 3120, 3080, 3250, 3380, 3450];
+          sparkUsers = [38.2, 39.1, 40.5, 41.0, 42.3, 43.8, 44.1, 43.5, 45.2, 46.0, 47.1, 48.2, 48.9, 49.5, 50.2, 51.0, 51.8, 52.3, 53.0, 53.8];
+          sparkConv  = [3.02, 3.05, 3.10, 3.08, 3.15, 3.18, 3.22, 3.25, 3.28, 3.30, 3.35, 3.38, 3.40, 3.42, 3.45, 3.48, 3.50, 3.52, 3.55, 3.58];
+          sparkCsat  = [4.42, 4.45, 4.43, 4.48, 4.47, 4.50, 4.52, 4.55, 4.53, 4.56, 4.58, 4.60, 4.61, 4.63, 4.65, 4.66, 4.68, 4.69, 4.70, 4.72];
+        }
+
+        var cards = [
+          {
+            label:       'Total Revenue',
+            value:       2845000,
+            change:      16.1,
+            changeLabel: 'vs previous period',
+            format:      'currency',
+            currency:    'USD',
+            decimals:    0,
+            target:      3000000,
+            sparkline:   sparkRev,
+            icon:        '\u{1F4B0}',
+            color:       'var(--color-accent)',
+          },
+          {
+            label:       'Active Users',
+            value:       48230,
+            change:      14.6,
+            changeLabel: 'vs previous period',
+            format:      'integer',
+            target:      50000,
+            sparkline:   sparkUsers,
+            icon:        '\u{1F465}',
+            color:       'var(--color-success)',
+          },
+          {
+            label:       'Conversion Rate',
+            value:       3.42,
+            change:      7.5,
+            changeLabel: 'vs previous period',
+            format:      'percentage',
+            decimals:    2,
+            target:      4.0,
+            sparkline:   sparkConv,
+            icon:        '\u{1F4C8}',
+            color:       'var(--color-info)',
+          },
+          {
+            label:       'Churn Rate',
+            value:       2.1,
+            change:      -8.7,
+            changeLabel: 'vs previous period',
+            format:      'percentage',
+            decimals:    1,
+            target:      1.5,
+            sparkline:   [2.8, 2.7, 2.6, 2.5, 2.5, 2.4, 2.3, 2.2, 2.2, 2.1, 2.1, 2.0, 2.0, 1.9, 1.9, 1.8, 1.8, 1.7, 1.7, 1.6],
+            icon:        '\u{1F4A9}',
+            color:       'var(--color-danger)',
+            goodIsUp:    false,
+          },
+          {
+            label:       'CSAT Score',
+            value:       4.7,
+            change:      4.4,
+            changeLabel: 'vs previous period',
+            format:      'fixed',
+            decimals:    1,
+            target:      4.8,
+            sparkline:   sparkCsat,
+            icon:        '\u{2B50}',
+            color:       'var(--color-warning)',
+          },
+        ];
+
+        cards.forEach(function(cfg) {
+          var el = BI.components.kpiCard(cfg);
+          grid.appendChild(el);
+        });
+      });
+
+    })();
+  </script>
+
+</body>
+</html>

@@ -1,0 +1,133 @@
+{
+  "revenue": {
+    "current": 2845000,
+    "previous": 2450000,
+    "target": 3000000,
+    "label": "Revenue",
+    "format": "currency"
+  },
+  "users": {
+    "current": 48230,
+    "previous": 42100,
+    "target": 50000,
+    "label": "Active Users",
+    "format": "integer"
+  },
+  "conversion": {
+    "current": 3.42,
+    "previous": 3.18,
+    "target": 4.0,
+    "label": "Conversion Rate",
+    "format": "percentage"
+  },
+  "satisfaction": {
+    "current": 4.7,
+    "previous": 4.5,
+    "target": 4.8,
+    "label": "CSAT Score",
+    "format": "fixed"
+  },
+  "timeSeriesRevenue": [
+    { "date": "2024-01", "value": 1850000, "label": "Jan" },
+    { "date": "2024-02", "value": 1920000, "label": "Feb" },
+    { "date": "2024-03", "value": 2010000, "label": "Mar" },
+    { "date": "2024-04", "value": 2150000, "label": "Apr" },
+    { "date": "2024-05", "value": 2230000, "label": "May" },
+    { "date": "2024-06", "value": 2310000, "label": "Jun" },
+    { "date": "2024-07", "value": 2420000, "label": "Jul" },
+    { "date": "2024-08", "value": 2380000, "label": "Aug" },
+    { "date": "2024-09", "value": 2560000, "label": "Sep" },
+    { "date": "2024-10", "value": 2680000, "label": "Oct" },
+    { "date": "2024-11", "value": 2750000, "label": "Nov" },
+    { "date": "2024-12", "value": 2845000, "label": "Dec" }
+  ],
+  "salesByRegion": [
+    { "label": "North America", "value": 1240000, "color": "#4f6af5" },
+    { "label": "Europe", "value": 890000, "color": "#22c55e" },
+    { "label": "Asia Pacific", "value": 520000, "color": "#f59e0b" },
+    { "label": "Latin America", "value": 310000, "color": "#ef4444" },
+    { "label": "Middle East", "value": 180000, "color": "#8b5cf6" },
+    { "label": "Africa", "value": 95000, "color": "#06b6d4" }
+  ],
+  "productMix": [
+    { "label": "SaaS Subscriptions", "value": 42, "color": "#4f6af5" },
+    { "label": "Professional Services", "value": 23, "color": "#22c55e" },
+    { "label": "Hardware", "value": 18, "color": "#f59e0b" },
+    { "label": "Licensing", "value": 12, "color": "#8b5cf6" },
+    { "label": "Other", "value": 5, "color": "#06b6d4" }
+  ],
+  "funnelStages": [
+    { "label": "Website Visitors", "value": 145000 },
+    { "label": "Sign Ups", "value": 28300 },
+    { "label": "MQLs", "value": 8400 },
+    { "label": "SQLs", "value": 3200 },
+    { "label": "Opportunities", "value": 1100 },
+    { "label": "Closed Won", "value": 420 }
+  ],
+  "monthlyRevenue": {
+    "labels": ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"],
+    "datasets": [
+      { "label": "Product A", "values": [820, 910, 1010, 1080, 1150, 1220, 1310, 1280, 1390, 1480, 1520, 1610] },
+      { "label": "Product B", "values": [540, 580, 610, 660, 690, 750, 780, 740, 810, 870, 920, 970] },
+      { "label": "Product C", "values": [300, 320, 350, 370, 390, 410, 440, 420, 460, 490, 510, 530] }
+    ]
+  },
+  "waterfallData": [
+    { "label": "Starting Revenue", "value": 2100000, "isTotal": true },
+    { "label": "New Subscriptions", "value": 620000 },
+    { "label": "Upsells", "value": 280000 },
+    { "label": "Churn", "value": -310000 },
+    { "label": "Discounts", "value": -95000 },
+    { "label": "Ending Revenue", "value": 2695000, "isTotal": true }
+  ],
+  "scatterData": [
+    { "x": 1200, "y": 34000, "radius": 8, "label": "Campaign A" },
+    { "x": 800, "y": 28000, "radius": 6, "label": "Campaign B" },
+    { "x": 2000, "y": 52000, "radius": 10, "label": "Campaign C" },
+    { "x": 450, "y": 18000, "radius": 5, "label": "Campaign D" },
+    { "x": 1600, "y": 41000, "radius": 7, "label": "Campaign E" },
+    { "x": 950, "y": 31000, "radius": 6, "label": "Campaign F" },
+    { "x": 2800, "y": 68000, "radius": 11, "label": "Campaign G" },
+    { "x": 700, "y": 22000, "radius": 5, "label": "Campaign H" }
+  ],
+  "heatmapData": {
+    "grid": [
+      [45, 62, 78, 55, 42, 38, 51],
+      [32, 48, 91, 85, 63, 44, 39],
+      [28, 52, 112, 98, 72, 48, 35],
+      [38, 58, 95, 88, 68, 52, 44],
+      [55, 72, 86, 72, 58, 62, 58]
+    ],
+    "xLabels": ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"],
+    "yLabels": ["10-12am","12-2pm","2-4pm","4-6pm","6-8pm"]
+  },
+  "tableData": [
+    { "rank": 1, "product": "Enterprise Suite", "revenue": 845000, "growth": 12.4, "marketShare": 29.7, "status": "growing" },
+    { "rank": 2, "product": "Cloud Platform", "revenue": 623000, "growth": 8.9, "marketShare": 21.9, "status": "growing" },
+    { "rank": 3, "product": "Analytics Pro", "revenue": 412000, "growth": -2.3, "marketShare": 14.5, "status": "declining" },
+    { "rank": 4, "product": "Mobile SDK", "revenue": 298000, "growth": 34.7, "marketShare": 10.5, "status": "growing" },
+    { "rank": 5, "product": "Data Connect", "revenue": 215000, "growth": 5.1, "marketShare": 7.6, "status": "stable" },
+    { "rank": 6, "product": "Legacy On-Prem", "revenue": 187000, "growth": -15.8, "marketShare": 6.6, "status": "declining" },
+    { "rank": 7, "product": "API Gateway", "revenue": 156000, "growth": 22.3, "marketShare": 5.5, "status": "growing" },
+    { "rank": 8, "product": "Security Bundle", "revenue": 109000, "growth": 3.2, "marketShare": 3.8, "status": "stable" }
+  ],
+  "kpiRow": [
+    { "label": "Total Revenue", "value": 2845000, "change": 16.1, "format": "currency" },
+    { "label": "Gross Margin", "value": 72.4, "change": 1.8, "format": "percentage" },
+    { "label": "ARPU", "value": 59, "change": 4.2, "format": "currency" },
+    { "label": "Churn Rate", "value": 2.1, "change": -0.4, "format": "percentage" },
+    { "label": "LTV:CAC", "value": 4.8, "change": 0.3, "format": "fixed" }
+  ],
+  "countries": [
+    { "name": "United States", "value": 42, "code": "US" },
+    { "name": "United Kingdom", "value": 15, "code": "GB" },
+    { "name": "Germany", "value": 12, "code": "DE" },
+    { "name": "France", "value": 8, "code": "FR" },
+    { "name": "Japan", "value": 7, "code": "JP" },
+    { "name": "Canada", "value": 5, "code": "CA" },
+    { "name": "Australia", "value": 4, "code": "AU" },
+    { "name": "Brazil", "value": 3, "code": "BR" },
+    { "name": "India", "value": 2, "code": "IN" },
+    { "name": "Spain", "value": 2, "code": "ES" }
+  ]
+}

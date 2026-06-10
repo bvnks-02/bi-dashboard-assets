@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sales by Region — Bar Chart</title>
+  <link rel="stylesheet" href="../design-tokens.css">
+
+  <style>
+    /* ── Component: Sales by Region Bar Chart ──────────────────────── */
+    .chart-card {
+      min-height: 380px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .chart-card .card-body {
+      flex: 1;
+      min-height: 0;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .chart-card .chart-container {
+      width: 100%;
+      height: 100%;
+      position: absolute;
+      inset: 0;
+    }
+
+    .chart-card .chart-container canvas {
+      display: block;
+      width: 100% !important;
+      height: 100% !important;
+    }
+
+    /* ── Skeleton / loading state ─────────────────────────────────── */
+    .chart-card .skeleton-chart {
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(
+        90deg,
+        var(--color-bg-surface, #1a1d27) 25%,
+        var(--color-bg-hover, #2a2f42) 50%,
+        var(--color-bg-surface, #1a1d27) 75%
+      );
+      background-size: 200% 100%;
+      animation: shimmer 1.5s ease infinite;
+      border-radius: var(--radius-sm, 4px);
+    }
+
+    @keyframes shimmer {
+      0%   { background-position: -200% 0; }
+      100% { background-position: 200% 0; }
+    }
+
+    /* ── Responsive adjustments ───────────────────────────────────── */
+    @media (max-width: 768px) {
+      .chart-card {
+        min-height: 320px;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .chart-card {
+        min-height: 280px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="card chart-card" id="sales-by-region-card">
+    <div class="card-header">
+      <span class="card-title">Sales by Region</span>
+    </div>
+    <div class="card-body" style="height:300px;">
+      <div class="chart-container" id="sales-by-region-chart">
+        <canvas></canvas>
+      </div>
+      <div class="skeleton-chart" id="chart-skeleton" style="position:absolute;inset:0;z-index:1;"></div>
+    </div>
+  </div>
+
+  <script src="../js/bi-utils.js"></script>
+  <script src="../js/bi-charts.js"></script>
+
+  <script>
+    (function() {
+      'use strict';
+
+      const CHART_ID = 'sales-by-region-chart';
+      const SKELETON_ID = 'chart-skeleton';
+
+      /**
+       * Render the bar chart with the given data.
+       * Removes the skeleton overlay, then calls BI.charts.bar().
+       */
+      function renderChart(data) {
+        // Hide skeleton
+        const skeleton = document.getElementById(SKELETON_ID);
+        if (skeleton) {
+          skeleton.style.opacity = '0';
+          skeleton.style.transition = 'opacity 0.3s ease';
+          setTimeout(function() { skeleton.remove(); }, 350);
+        }
+
+        // Render using the chart engine
+        BI.charts.bar(CHART_ID, data, {
+          animate: true,
+          cornerRadius: 4,
+        });
+      }
+
+      /**
+       * Fetch sample data from the assets directory.
+       * Falls back to generated data on failure.
+       */
+      function loadData() {
+        // Attempt to fetch from the sample data file
+        fetch('../assets/sample-data.json')
+          .then(function(resp) {
+            if (!resp.ok) throw new Error('HTTP ' + resp.status);
+            return resp.json();
+          })
+          .then(function(json) {
+            var data = json.salesByRegion;
+            if (data && data.length > 0) {
+              renderChart(data);
+            } else {
+              generateAndRender();
+            }
+          })
+          .catch(function() {
+            generateAndRender();
+          });
+      }
+
+      /**
+       * Generate sample sales-by-region data as fallback.
+       */
+      function generateAndRender() {
+        var data = [
+          { label: 'North America', value: 1240000, color: '#4f6af5' },
+          { label: 'Europe',        value: 890000,  color: '#22c55e' },
+          { label: 'Asia Pacific',  value: 520000,  color: '#f59e0b' },
+          { label: 'Latin America', value: 310000,  color: '#ef4444' },
+          { label: 'Middle East',   value: 180000,  color: '#8b5cf6' },
+          { label: 'Africa',        value: 95000,   color: '#06b6d4' },
+        ];
+        renderChart(data);
+      }
+
+      // ── Boot ────────────────────────────────────────────────────
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', loadData);
+      } else {
+        loadData();
+      }
+
+      // ── Resize: chart engine handles ResizeObserver internally ──
+    })();
+  </script>
+
+</body>
+</html>

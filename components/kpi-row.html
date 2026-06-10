@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KPI Row — BI Dashboard Component</title>
+  <link rel="stylesheet" href="../design-tokens.css">
+  <style>
+    /* ======================================================================
+       KPI Row Component
+       Self-contained horizontal row of KPI metric cards.
+       ====================================================================== */
+
+    .kpi-row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: stretch;
+      background: var(--color-bg-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      padding: 0;
+      gap: 0;
+      transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+    }
+
+    .kpi-row:hover {
+      border-color: var(--color-border-light);
+    }
+
+    /* ── Individual KPI Item ──────────────────────────────────────────── */
+    .kpi-item {
+      flex: 1 1 0;
+      min-width: 140px;
+      padding: var(--space-5) var(--space-6);
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-1);
+      position: relative;
+      transition: background var(--transition-fast);
+    }
+
+    .kpi-item:hover {
+      background: var(--color-bg-hover);
+    }
+
+    /* Vertical dividers between items */
+    .kpi-item + .kpi-item::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 16%;
+      height: 68%;
+      width: 1px;
+      background: var(--color-border);
+    }
+
+    /* ── Label ────────────────────────────────────────────────────────── */
+    .kpi-item__label {
+      font-size: var(--text-xs);
+      font-weight: var(--font-semibold);
+      color: var(--color-text-tertiary);
+      text-transform: uppercase;
+      letter-spacing: var(--tracking-wide);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      line-height: 1.4;
+    }
+
+    /* ── Value ────────────────────────────────────────────────────────── */
+    .kpi-item__value {
+      font-size: var(--text-2xl);
+      font-weight: var(--font-bold);
+      color: var(--color-text-primary);
+      font-family: var(--font-mono);
+      line-height: var(--leading-tight);
+      letter-spacing: var(--tracking-tight);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* ── Trend Row ────────────────────────────────────────────────────── */
+    .kpi-item__trend {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-1);
+      font-size: var(--text-sm);
+      font-weight: var(--font-medium);
+      font-family: var(--font-mono);
+      line-height: 1.4;
+      margin-top: var(--space-1);
+    }
+
+    .kpi-item__trend-arrow {
+      font-size: var(--text-xs);
+      line-height: 1;
+      flex-shrink: 0;
+    }
+
+    /* ── Trend Color Variants ─────────────────────────────────────────── */
+    .kpi-item__trend--up {
+      color: var(--color-success);
+    }
+
+    .kpi-item__trend--down {
+      color: var(--color-danger);
+    }
+
+    .kpi-item__trend--neutral {
+      color: var(--color-text-tertiary);
+    }
+
+    /* ── Skeleton / Loading State ─────────────────────────────────────── */
+    .kpi-row--loading .kpi-item {
+      pointer-events: none;
+    }
+
+    .kpi-row--loading .kpi-item__label,
+    .kpi-row--loading .kpi-item__value,
+    .kpi-row--loading .kpi-item__trend {
+      position: relative;
+      color: transparent !important;
+    }
+
+    .kpi-row--loading .kpi-item__label::after,
+    .kpi-row--loading .kpi-item__value::after,
+    .kpi-row--loading .kpi-item__trend::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(
+        90deg,
+        var(--color-bg-surface) 25%,
+        var(--color-bg-hover) 50%,
+        var(--color-bg-surface) 75%
+      );
+      background-size: 200% 100%;
+      animation: shimmer 1.5s ease infinite;
+      border-radius: var(--radius-sm);
+    }
+
+    .kpi-row--loading .kpi-item__label {
+      min-height: 14px;
+    }
+
+    .kpi-row--loading .kpi-item__value {
+      min-height: 32px;
+      margin-top: var(--space-1);
+    }
+
+    .kpi-row--loading .kpi-item__trend {
+      min-height: 18px;
+      margin-top: var(--space-2);
+    }
+
+    /* ── Empty State ──────────────────────────────────────────────────── */
+    .kpi-row--empty {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: var(--space-12) var(--space-6);
+      color: var(--color-text-tertiary);
+      font-size: var(--text-sm);
+      gap: var(--space-2);
+    }
+
+    .kpi-row--empty .kpi-row__empty-icon {
+      font-size: var(--text-xl);
+      opacity: 0.5;
+    }
+
+    /* ── Animation ────────────────────────────────────────────────────── */
+    .kpi-item {
+      animation: kpiFadeIn 0.4s ease both;
+    }
+
+    .kpi-item:nth-child(1) { animation-delay: 0.00s; }
+    .kpi-item:nth-child(2) { animation-delay: 0.05s; }
+    .kpi-item:nth-child(3) { animation-delay: 0.10s; }
+    .kpi-item:nth-child(4) { animation-delay: 0.15s; }
+    .kpi-item:nth-child(5) { animation-delay: 0.20s; }
+    .kpi-item:nth-child(6) { animation-delay: 0.25s; }
+
+    @keyframes kpiFadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(8px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    /* ── Responsive ───────────────────────────────────────────────────── */
+    @media (max-width: 900px) {
+      .kpi-item {
+        flex: 1 1 calc(50% - 1px);
+        min-width: 0;
+      }
+
+      /* Remove border on items that wrap to new row start */
+      .kpi-item:nth-child(2) + .kpi-item::before {
+        display: none;
+      }
+
+      /* Reset: show divider on all except first in each row */
+      .kpi-item + .kpi-item::before {
+        display: block;
+      }
+    }
+
+    @media (max-width: 560px) {
+      .kpi-item {
+        flex: 1 1 100%;
+      }
+
+      .kpi-item + .kpi-item::before {
+        top: 0;
+        left: 10%;
+        width: 80%;
+        height: 1px;
+      }
+    }
+
+    /* ── Demo container (for standalone preview) ──────────────────────── */
+    .kpi-demo-wrapper {
+      max-width: 1100px;
+      margin: var(--space-8) auto;
+      padding: 0 var(--space-4);
+    }
+
+    .kpi-demo-wrapper h2 {
+      font-size: var(--text-lg);
+      font-weight: var(--font-semibold);
+      color: var(--color-text-secondary);
+      margin-bottom: var(--space-4);
+      letter-spacing: var(--tracking-wide);
+      text-transform: uppercase;
+    }
+
+    .kpi-demo-wrapper .kpi-controls {
+      display: flex;
+      gap: var(--space-2);
+      margin-bottom: var(--space-4);
+    }
+
+    .kpi-demo-wrapper .kpi-btn {
+      padding: var(--space-2) var(--space-4);
+      font-size: var(--text-sm);
+      font-family: var(--font-family);
+      font-weight: var(--font-medium);
+      color: var(--color-text-primary);
+      background: var(--color-bg-elevated);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      cursor: pointer;
+      transition: background var(--transition-fast), border-color var(--transition-fast);
+    }
+
+    .kpi-demo-wrapper .kpi-btn:hover {
+      background: var(--color-bg-hover);
+      border-color: var(--color-border-light);
+    }
+
+    .kpi-demo-wrapper .kpi-btn:active {
+      background: var(--color-bg-active);
+    }
+  </style>
+</head>
+<body>
+
+  <div class="kpi-demo-wrapper">
+    <h2>Key Performance Indicators</h2>
+
+    <div class="kpi-controls">
+      <button class="kpi-btn" data-action="reload">⟳ Reload Data</button>
+      <button class="kpi-btn" data-action="loading">⏳ Toggle Loading</button>
+      <button class="kpi-btn" data-action="empty">⭕ Toggle Empty</button>
+    </div>
+
+    <!-- KPI Row Component Root -->
+    <div class="kpi-row" id="kpiRow" role="list" aria-label="Key Performance Indicators">
+      <!-- Items rendered by JavaScript -->
+    </div>
+  </div>
+
+  <script src="../js/bi-utils.js"></script>
+  <script>
+    /* ======================================================================
+       KPI Row — Rendering Engine
+       ====================================================================== */
+
+    (function () {
+      'use strict';
+
+      // ── Sample Data ──────────────────────────────────────────────────
+      // Matches the structure in sample-data.json; five metrics as specified.
+      const SAMPLE_KPI_DATA = [
+        {
+          label: 'Total Revenue',
+          value: 2845000,
+          change: 16.1,
+          format: 'currency',
+          currency: 'USD',
+          decimals: 0,
+        },
+        {
+          label: 'Gross Margin',
+          value: 72.4,
+          change: 1.8,
+          format: 'percentage',
+          decimals: 1,
+        },
+        {
+          label: 'ARPU',
+          value: 59,
+          change: 4.2,
+          format: 'currency',
+          currency: 'USD',
+          decimals: 0,
+        },
+        {
+          label: 'Churn Rate',
+          value: 2.1,
+          change: -0.4,
+          format: 'percentage',
+          decimals: 1,
+          inverseTrend: true, // negative change is good for churn
+        },
+        {
+          label: 'LTV:CAC',
+          value: 4.8,
+          change: 0.3,
+          format: 'fixed',
+          decimals: 1,
+        },
+      ];
+
+      // ── Format Helpers ───────────────────────────────────────────────
+
+      /**
+       * Format a KPI value based on its declared format type.
+       * Delegates to BI.format.* where possible.
+       */
+      function formatKPIValue(item) {
+        const { value, format, currency, decimals = 1 } = item;
+
+        switch (format) {
+          case 'currency':
+            // Use BI.format.kpi for compact display of large currency values
+            if (typeof BI !== 'undefined' && BI.format) {
+              return BI.format.kpi(value, { currency: currency || 'USD', decimals: 0 });
+            }
+            return `$${value.toLocaleString('en-US')}`;
+
+          case 'percentage':
+            return value.toFixed(decimals) + '%';
+
+          case 'integer':
+            if (typeof BI !== 'undefined' && BI.format) {
+              return BI.format.integer(value);
+            }
+            return value.toLocaleString('en-US');
+
+          case 'fixed':
+          default:
+            return value.toFixed(decimals);
+        }
+      }
+
+      /**
+       * Format the trend percentage change value.
+       */
+      function formatTrend(change) {
+        if (typeof BI !== 'undefined' && BI.format) {
+          return BI.format.percentage(change);
+        }
+        const sign = change > 0 ? '+' : '';
+        return sign + change.toFixed(1) + '%';
+      }
+
+      /**
+       * Get the trend direction and color class based on change value.
+       * @param {number} change - The percentage change
+       * @param {boolean} inverse - If true, negative change is considered "up" (good)
+       * @returns {{ direction: 'up'|'down'|'neutral', className: string, arrow: string }}
+       */
+      function getTrendInfo(change, inverse) {
+        if (change === 0 || change === null || change === undefined) {
+          return {
+            direction: 'neutral',
+            className: 'kpi-item__trend--neutral',
+            arrow: '—',
+          };
+        }
+
+        const positiveIsUp = !inverse;
+        const isUp = positiveIsUp ? change > 0 : change < 0;
+
+        if (isUp) {
+          return {
+            direction: 'up',
+            className: 'kpi-item__trend--up',
+            arrow: '\u25B2', // ▲
+          };
+        }
+        return {
+          direction: 'down',
+          className: 'kpi-item__trend--down',
+          arrow: '\u25BC', // ▼
+        };
+      }
+
+      // ── Rendering ────────────────────────────────────────────────────
+
+      /**
+       * Render the KPI row with the given data array.
+       * @param {Array} data - Array of KPI metric objects
+       */
+      function renderKPIRow(data) {
+        const container = document.getElementById('kpiRow');
+        if (!container) return;
+
+        // Clear existing content
+        container.innerHTML = '';
+
+        // Remove state classes
+        container.classList.remove('kpi-row--loading', 'kpi-row--empty');
+
+        // ── Empty State ──────────────────────────────────────────────
+        if (!data || data.length === 0) {
+          container.classList.add('kpi-row--empty');
+          container.innerHTML = `
+            <span class="kpi-row__empty-icon">📊</span>
+            <span>No KPI data available</span>
+          `;
+          return;
+        }
+
+        // ── Render Each Item ────────────────────────────────────────
+        for (const item of data) {
+          const trendInfo = getTrendInfo(item.change, item.inverseTrend);
+          const formattedValue = formatKPIValue(item);
+          const formattedTrend = formatTrend(item.change);
+          const itemId = 'kpi-' + item.label.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/-+$/, '');
+
+          const itemEl = document.createElement('div');
+          itemEl.className = 'kpi-item';
+          itemEl.id = itemId;
+          itemEl.setAttribute('role', 'listitem');
+          itemEl.setAttribute('aria-label', `${item.label}: ${formattedValue}`);
+
+          itemEl.innerHTML = `
+            <div class="kpi-item__label" title="${item.label}">${item.label}</div>
+            <div class="kpi-item__value" title="${formattedValue}">${formattedValue}</div>
+            <div class="kpi-item__trend ${trendInfo.className}">
+              <span class="kpi-item__trend-arrow" aria-hidden="true">${trendInfo.arrow}</span>
+              <span class="kpi-item__trend-value">${formattedTrend}</span>
+            </div>
+          `;
+
+          container.appendChild(itemEl);
+        }
+      }
+
+      // ── Loading State ────────────────────────────────────────────────
+
+      function showLoadingState() {
+        const container = document.getElementById('kpiRow');
+        if (!container) return;
+
+        container.classList.remove('kpi-row--empty');
+        container.classList.toggle('kpi-row--loading');
+      }
+
+      // ── Empty State ───────────────────────────────────────────────────
+
+      function toggleEmptyState() {
+        const container = document.getElementById('kpiRow');
+        if (!container) return;
+
+        container.classList.remove('kpi-row--loading');
+
+        if (container.classList.contains('kpi-row--empty')) {
+          // Return to normal rendering
+          container.classList.remove('kpi-row--empty');
+          renderKPIRow(SAMPLE_KPI_DATA);
+        } else {
+          container.classList.add('kpi-row--empty');
+          container.innerHTML = `
+            <span class="kpi-row__empty-icon">📊</span>
+            <span>No KPI data available</span>
+          `;
+        }
+      }
+
+      // ── Generate Random Data ─────────────────────────────────────────
+
+      function generateRandomData() {
+        const labels = [
+          'Total Revenue',
+          'Net Income',
+          'Active Users',
+          'Conversion Rate',
+          'Avg. Order Value',
+          'Churn Rate',
+        ];
+
+        // Pick 4-6 random metrics
+        const count = 4 + Math.floor(Math.random() * 3); // 4, 5, or 6
+        const shuffled = [...labels].sort(() => Math.random() - 0.5);
+        const selected = shuffled.slice(0, count);
+
+        return selected.map((label) => {
+          const formats = {
+            'Total Revenue': { format: 'currency', currency: 'USD', decimals: 0, base: 2000000, spread: 1500000 },
+            'Net Income': { format: 'currency', currency: 'USD', decimals: 0, base: 800000, spread: 500000 },
+            'Active Users': { format: 'integer', base: 45000, spread: 25000 },
+            'Conversion Rate': { format: 'percentage', decimals: 2, base: 3.5, spread: 2.0 },
+            'Avg. Order Value': { format: 'currency', currency: 'USD', decimals: 0, base: 120, spread: 60 },
+            'Churn Rate': { format: 'percentage', decimals: 1, base: 2.5, spread: 1.5, inverseTrend: true },
+          };
+
+          const cfg = formats[label] || { format: 'fixed', decimals: 1, base: 100, spread: 50 };
+          const value = Math.max(0, cfg.base + (Math.random() - 0.5) * cfg.spread);
+          const change = (Math.random() - 0.48) * 20; // roughly -10% to +10%
+
+          return {
+            label,
+            value: cfg.format === 'integer' ? Math.round(value) : +value.toFixed(cfg.decimals || 1),
+            change: +change.toFixed(1),
+            format: cfg.format,
+            currency: cfg.currency,
+            decimals: cfg.decimals,
+            inverseTrend: cfg.inverseTrend,
+          };
+        });
+      }
+
+      // ── Initialize ───────────────────────────────────────────────────
+
+      function init() {
+        renderKPIRow(SAMPLE_KPI_DATA);
+
+        // Wire up demo controls
+        document.querySelectorAll('[data-action]').forEach(function (btn) {
+          btn.addEventListener('click', function () {
+            const action = this.getAttribute('data-action');
+            switch (action) {
+              case 'reload':
+                renderKPIRow(generateRandomData());
+                break;
+              case 'loading':
+                showLoadingState();
+                break;
+              case 'empty':
+                toggleEmptyState();
+                break;
+            }
+          });
+        });
+
+        // Expose the render function globally for external use
+        window.KPIRow = {
+          render: renderKPIRow,
+          loading: showLoadingState,
+          empty: toggleEmptyState,
+        };
+      }
+
+      // Boot on DOMContentLoaded
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
+      } else {
+        init();
+      }
+    })();
+  </script>
+</body>
+</html>

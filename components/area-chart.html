@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Revenue by Product — Stacked Area Chart</title>
+  <link rel="stylesheet" href="../design-tokens.css">
+
+  <style>
+    /* ── Component: Stacked Area Chart ─────────────────────────────── */
+    .area-chart-card {
+      min-height: 340px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .area-chart-card .card-body {
+      flex: 1;
+      min-height: 0;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .area-chart-card .chart-container {
+      width: 100%;
+      height: 300px;
+      position: relative;
+    }
+
+    .area-chart-card .chart-container canvas {
+      display: block;
+      width: 100% !important;
+      height: 100% !important;
+    }
+
+    /* ── Legend ─────────────────────────────────────────────────────── */
+    .chart-legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--space-4, 16px);
+      padding-top: var(--space-3, 12px);
+      margin-top: var(--space-2, 8px);
+      border-top: 1px solid var(--color-border, #2d3248);
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2, 8px);
+      font-size: var(--text-xs, 0.625rem);
+      color: var(--color-text-secondary, #9aa0b0);
+      font-weight: var(--font-medium, 500);
+    }
+
+    .legend-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    /* ── Skeleton / loading state ──────────────────────────────────── */
+    .area-chart-card .skeleton-chart {
+      width: 100%;
+      height: 300px;
+      background: linear-gradient(
+        90deg,
+        var(--color-bg-surface, #1a1d27) 25%,
+        var(--color-bg-hover, #2a2f42) 50%,
+        var(--color-bg-surface, #1a1d27) 75%
+      );
+      background-size: 200% 100%;
+      animation: shimmer 1.5s ease infinite;
+      border-radius: var(--radius-sm, 4px);
+    }
+
+    @keyframes shimmer {
+      0%   { background-position: -200% 0; }
+      100% { background-position: 200% 0; }
+    }
+
+    /* ── Responsive adjustments ────────────────────────────────────── */
+    @media (max-width: 768px) {
+      .area-chart-card .chart-container {
+        height: 240px;
+      }
+      .area-chart-card .skeleton-chart {
+        height: 240px;
+      }
+      .chart-legend {
+        gap: var(--space-3, 12px);
+      }
+    }
+
+    @media (max-width: 480px) {
+      .area-chart-card {
+        min-height: 280px;
+      }
+      .area-chart-card .chart-container {
+        height: 200px;
+      }
+      .area-chart-card .skeleton-chart {
+        height: 200px;
+      }
+      .area-chart-card .card-header {
+        flex-wrap: wrap;
+        gap: var(--space-1, 4px);
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="card area-chart-card" id="area-chart-card">
+    <div class="card-header">
+      <span class="card-title">Revenue by Product Stacked</span>
+    </div>
+    <div class="card-body">
+      <div class="chart-container" id="revenue-area-chart">
+        <canvas></canvas>
+      </div>
+      <div class="skeleton-chart" id="chart-skeleton" style="position:absolute;inset:0;z-index:1;"></div>
+    </div>
+    <div class="chart-legend" id="chart-legend"></div>
+  </div>
+
+  <script src="../js/bi-utils.js"></script>
+  <script src="../js/bi-charts.js"></script>
+
+  <script>
+    (function() {
+      'use strict';
+
+      const CHART_ID = 'revenue-area-chart';
+      const SKELETON_ID = 'chart-skeleton';
+      const LEGEND_ID = 'chart-legend';
+      const CARD_ID = 'area-chart-card';
+
+      /**
+       * Build the legend below the chart with colored dots and dataset labels.
+       */
+      function renderLegend(datasets) {
+        var legendEl = document.getElementById(LEGEND_ID);
+        if (!legendEl) return;
+        legendEl.innerHTML = '';
+        datasets.forEach(function(ds) {
+          var item = document.createElement('div');
+          item.className = 'legend-item';
+
+          var dot = document.createElement('span');
+          dot.className = 'legend-dot';
+          dot.style.backgroundColor = ds.color || BI.colors.get(0);
+          item.appendChild(dot);
+
+          var label = document.createElement('span');
+          label.textContent = ds.label || '';
+          item.appendChild(label);
+
+          legendEl.appendChild(item);
+        });
+      }
+
+      /**
+       * Render the stacked area chart with the given monthlyRevenue data.
+       * Removes the skeleton overlay, assigns colors from BI.colors palette,
+       * then calls BI.charts.area().
+       */
+      function renderChart(monthlyRevenue) {
+        // Hide skeleton
+        var skeleton = document.getElementById(SKELETON_ID);
+        if (skeleton) {
+          skeleton.style.opacity = '0';
+          skeleton.style.transition = 'opacity 0.3s ease';
+          setTimeout(function() { skeleton.remove(); }, 350);
+        }
+
+        if (!monthlyRevenue || !monthlyRevenue.labels || !monthlyRevenue.datasets) {
+          return;
+        }
+
+        // Assign colors from BI.colors palette if not already present
+        var datasets = monthlyRevenue.datasets.map(function(ds, i) {
+          return {
+            label: ds.label,
+            values: ds.values,
+            color: ds.color || BI.colors.get(i),
+          };
+        });
+
+        // Render using the chart engine
+        BI.charts.area(CHART_ID, datasets, {
+          labels: monthlyRevenue.labels,
+          title: '',
+          animate: true,
+        });
+
+        // Build the legend below the chart
+        renderLegend(datasets);
+      }
+
+      /**
+       * Fetch sample data from the assets directory.
+       * Falls back to generated data on failure.
+       */
+      function loadData() {
+        fetch('../assets/sample-data.json')
+          .then(function(resp) {
+            if (!resp.ok) throw new Error('HTTP ' + resp.status);
+            return resp.json();
+          })
+          .then(function(json) {
+            if (json.monthlyRevenue && json.monthlyRevenue.datasets && json.monthlyRevenue.datasets.length > 0) {
+              renderChart(json.monthlyRevenue);
+            } else {
+              generateAndRender();
+            }
+          })
+          .catch(function() {
+            generateAndRender();
+          });
+      }
+
+      /**
+       * Generate 12 months of sample stacked area data as fallback.
+       */
+      function generateAndRender() {
+        var monthLabels = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+        // Generate three product datasets with realistic patterns
+        var datasets = [
+          {
+            label: 'Product A',
+            values: BI.data.generateTimeSeries({
+              points: 12, start: '2024-01-01', interval: 'month',
+              base: 1000, trend: 0.03, volatility: 0.04, seed: 42
+            }).map(function(d) { return Math.round(d.value); }),
+            color: BI.colors.get(0),
+          },
+          {
+            label: 'Product B',
+            values: BI.data.generateTimeSeries({
+              points: 12, start: '2024-01-01', interval: 'month',
+              base: 600, trend: 0.025, volatility: 0.035, seed: 99
+            }).map(function(d) { return Math.round(d.value); }),
+            color: BI.colors.get(1),
+          },
+          {
+            label: 'Product C',
+            values: BI.data.generateTimeSeries({
+              points: 12, start: '2024-01-01', interval: 'month',
+              base: 350, trend: 0.02, volatility: 0.03, seed: 200
+            }).map(function(d) { return Math.round(d.value); }),
+            color: BI.colors.get(2),
+          },
+        ];
+
+        renderChart({ labels: monthLabels, datasets: datasets });
+      }
+
+      // ── Boot ────────────────────────────────────────────────────────
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', loadData);
+      } else {
+        loadData();
+      }
+
+      // ── Resize: chart engine handles ResizeObserver internally ──
+    })();
+  </script>
+
+</body>
+</html>

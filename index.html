@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Executive BI Dashboard</title>
+  <link rel="stylesheet" href="design-tokens.css">
+  <script src="js/bi-utils.js"></script>
+  <script src="js/bi-charts.js"></script>
+  <style>
+    /* ── Dashboard Layout ───────────────────────────────────────────── */
+    .dashboard {
+      max-width: 1440px;
+      margin: 0 auto;
+      padding: var(--space-6);
+      animation: fadeIn 0.6s ease;
+    }
+
+    .dashboard-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: var(--space-8);
+      flex-wrap: wrap;
+      gap: var(--space-4);
+    }
+
+    .dashboard-title {
+      font-size: var(--text-2xl);
+      font-weight: var(--font-bold);
+      color: var(--color-text-primary);
+    }
+
+    .dashboard-subtitle {
+      font-size: var(--text-sm);
+      color: var(--color-text-tertiary);
+      margin-top: var(--space-1);
+    }
+
+    .dashboard-controls {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+    }
+
+    .refresh-btn {
+      background: var(--color-bg-elevated);
+      border: 1px solid var(--color-border);
+      color: var(--color-text-secondary);
+      padding: var(--space-2) var(--space-4);
+      border-radius: var(--radius-md);
+      font-size: var(--text-sm);
+      font-family: var(--font-family);
+      cursor: pointer;
+      transition: all var(--transition-fast);
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+    }
+
+    .refresh-btn:hover {
+      background: var(--color-bg-hover);
+      border-color: var(--color-border-light);
+      color: var(--color-text-primary);
+    }
+
+    .refresh-btn .icon {
+      font-size: 16px;
+    }
+
+    .last-updated {
+      font-size: var(--text-xs);
+      color: var(--color-text-tertiary);
+    }
+
+    /* ── Grid Layout ─────────────────────────────────────────────────── */
+    .grid-dashboard {
+      display: grid;
+      grid-template-columns: repeat(12, 1fr);
+      gap: var(--space-4);
+    }
+
+    .grid-item {
+      min-width: 0;
+    }
+
+    .col-span-3  { grid-column: span 3; }
+    .col-span-4  { grid-column: span 4; }
+    .col-span-6  { grid-column: span 6; }
+    .col-span-8  { grid-column: span 8; }
+    .col-span-9  { grid-column: span 9; }
+    .col-span-12 { grid-column: span 12; }
+
+    /* ── Section Headers ─────────────────────────────────────────────── */
+    .section-header {
+      grid-column: span 12;
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      margin: var(--space-6) 0 var(--space-3);
+    }
+
+    .section-header::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--color-border);
+    }
+
+    .section-title {
+      font-size: var(--text-lg);
+      font-weight: var(--font-semibold);
+      color: var(--color-text-primary);
+      white-space: nowrap;
+    }
+
+    .section-badge {
+      font-size: var(--text-xs);
+      color: var(--color-text-tertiary);
+      background: var(--color-bg-elevated);
+      padding: 2px 8px;
+      border-radius: var(--radius-full);
+    }
+
+    /* ── Component Frame ─────────────────────────────────────────────── */
+    .component-frame {
+      background: var(--color-bg-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+    }
+
+    .component-frame object,
+    .component-frame iframe {
+      width: 100%;
+      height: 100%;
+      min-height: 300px;
+      display: block;
+      border: none;
+    }
+
+    /* ── Inline Component Stubs (for KPI row, filters) ───────────────── */
+    .component-inline {
+      width: 100%;
+    }
+
+    /* ── Responsive ──────────────────────────────────────────────────── */
+    @media (max-width: 1200px) {
+      .col-span-3  { grid-column: span 4; }
+      .col-span-4  { grid-column: span 6; }
+      .col-span-8  { grid-column: span 12; }
+    }
+
+    @media (max-width: 768px) {
+      .dashboard { padding: var(--space-4); }
+      .dashboard-header { flex-direction: column; align-items: flex-start; }
+      .grid-dashboard { gap: var(--space-3); }
+      .col-span-3,
+      .col-span-4,
+      .col-span-6,
+      .col-span-8  { grid-column: span 12; }
+      .section-header { margin-top: var(--space-4); }
+    }
+
+    /* ── Loading State ───────────────────────────────────────────────── */
+    .dashboard-loading {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 60vh;
+      flex-direction: column;
+      gap: var(--space-4);
+    }
+
+    .dashboard-loading .spinner {
+      width: 40px;
+      height: 40px;
+      border: 3px solid var(--color-border);
+      border-top-color: var(--color-accent);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* ── Error State ─────────────────────────────────────────────────── */
+    .dashboard-error {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 40vh;
+      flex-direction: column;
+      gap: var(--space-3);
+      color: var(--color-danger);
+    }
+
+    .dashboard-error .error-icon {
+      font-size: 48px;
+    }
+
+    .dashboard-ready {
+      animation: fadeIn 0.5s ease;
+    }
+  </style>
+</head>
+<body>
+  <div class="dashboard" id="app">
+    <!-- Header -->
+    <header class="dashboard-header">
+      <div>
+        <h1 class="dashboard-title">Executive Dashboard</h1>
+        <p class="dashboard-subtitle">Real-time business intelligence overview</p>
+      </div>
+      <div class="dashboard-controls">
+        <span class="last-updated" id="lastUpdated">Loading...</span>
+        <button class="refresh-btn" onclick="refreshDashboard()">
+          <span class="icon">⟳</span> Refresh
+        </button>
+      </div>
+    </header>
+
+    <!-- Loading State -->
+    <div class="dashboard-loading" id="loadingState">
+      <div class="spinner"></div>
+      <span class="text-secondary">Loading dashboard components...</span>
+    </div>
+
+    <!-- Dashboard Grid (hidden until loaded) -->
+    <div class="grid-dashboard" id="dashboardGrid" style="display:none;">
+
+      <!-- Section: KPIs -->
+      <div class="section-header">
+        <span class="section-title">Key Metrics</span>
+        <span class="section-badge">Real-time</span>
+      </div>
+
+      <!-- KPI Cards (4 columns) -->
+      <div class="grid-item col-span-3">
+        <div class="component-inline" id="kpi-revenue"></div>
+      </div>
+      <div class="grid-item col-span-3">
+        <div class="component-inline" id="kpi-users"></div>
+      </div>
+      <div class="grid-item col-span-3">
+        <div class="component-inline" id="kpi-conversion"></div>
+      </div>
+      <div class="grid-item col-span-3">
+        <div class="component-inline" id="kpi-csat"></div>
+      </div>
+
+      <!-- Section: Revenue Analysis -->
+      <div class="section-header">
+        <span class="section-title">Revenue Analysis</span>
+        <span class="section-badge">Time Series</span>
+      </div>
+
+      <div class="grid-item col-span-8">
+        <div class="component-frame" style="height:380px;">
+          <object data="components/line-chart.html" type="text/html" width="100%" height="100%"></object>
+        </div>
+      </div>
+      <div class="grid-item col-span-4">
+        <div class="component-frame" style="height:380px;">
+          <object data="components/pie-chart.html" type="text/html" width="100%" height="100%"></object>
+        </div>
+      </div>
+
+      <!-- Section: Performance -->
+      <div class="section-header">
+        <span class="section-title">Performance</span>
+        <span class="section-badge">Comparative</span>
+      </div>
+
+      <div class="grid-item col-span-4">
+        <div class="component-frame" style="height:350px;">
+          <object data="components/bar-chart.html" type="text/html" width="100%" height="100%"></object>
+        </div>
+      </div>
+      <div class="grid-item col-span-4">
+        <div class="component-frame" style="height:350px;">
+          <object data="components/area-chart.html" type="text/html" width="100%" height="100%"></object>
+        </div>
+      </div>
+      <div class="grid-item col-span-4">
+        <div class="component-frame" style="height:350px;">
+          <object data="components/gauge-chart.html" type="text/html" width="100%" height="100%"></object>
+        </div>
+      </div>
+
+      <!-- Section: Pipeline & Diagnostics -->
+      <div class="section-header">
+        <span class="section-title">Pipeline & Diagnostics</span>
+        <span class="section-badge">Process</span>
+      </div>
+
+      <div class="grid-item col-span-4">
+        <div class="component-frame" style="height:380px;">
+          <object data="components/funnel-chart.html" type="text/html" width="100%" height="100%"></object>
+        </div>
+      </div>
+      <div class="grid-item col-span-4">
+        <div class="component-frame" style="height:380px;">
+          <object data="components/waterfall-chart.html" type="text/html" width="100%" height="100%"></object>
+        </div>
+      </div>
+      <div class="grid-item col-span-4">
+        <div class="component-frame" style="height:380px;">
+          <object data="components/scatter-plot.html" type="text/html" width="100%" height="100%"></object>
+        </div>
+      </div>
+
+      <!-- Section: Multi-dimensional -->
+      <div class="section-header">
+        <span class="section-title">Multi-dimensional Analysis</span>
+        <span class="section-badge">Deep Dive</span>
+      </div>
+
+      <div class="grid-item col-span-6">
+        <div class="component-frame" style="height:360px;">
+          <object data="components/heatmap.html" type="text/html" width="100%" height="100%"></object>
+        </div>
+      </div>
+      <div class="grid-item col-span-3">
+        <div class="component-frame" style="height:360px;">
+          <object data="components/treemap.html" type="text/html" width="100%" height="100%"></object>
+        </div>
+      </div>
+      <div class="grid-item col-span-3">
+        <div class="component-frame" style="height:360px;">
+          <object data="components/geo-map.html" type="text/html" width="100%" height="100%"></object>
+        </div>
+      </div>
+
+      <!-- Section: Data Table -->
+      <div class="section-header">
+        <span class="section-title">Product Details</span>
+        <span class="section-badge">Data Grid</span>
+      </div>
+
+      <div class="grid-item col-span-12">
+        <div class="component-frame" style="min-height:400px;">
+          <object data="components/data-table.html" type="text/html" width="100%" height="100%"></object>
+        </div>
+      </div>
+
+      <!-- Section: Filters -->
+      <div class="section-header">
+        <span class="section-title">Controls</span>
+        <span class="section-badge">Interactive</span>
+      </div>
+
+      <div class="grid-item col-span-12">
+        <div class="component-frame" style="min-height:200px;">
+          <object data="components/filter-controls.html" type="text/html" width="100%" height="100%"></object>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    // ── Dashboard Bootstrap ────────────────────────────────────────────
+    (function() {
+      'use strict';
+
+      const loadingEl = document.getElementById('loadingState');
+      const gridEl = document.getElementById('dashboardGrid');
+      const updatedEl = document.getElementById('lastUpdated');
+
+      // Render inline KPI cards
+      function renderKPI(targetId, cfg) {
+        const el = document.getElementById(targetId);
+        if (!el) return;
+        if (typeof BI.components !== 'undefined' && typeof BI.components.kpiCard === 'function') {
+          const card = BI.components.kpiCard(cfg);
+          el.appendChild(card);
+        } else {
+          // Fallback: render simple KPI inline
+          const color = cfg.trend >= 0 ? 'var(--color-success)' : 'var(--color-danger)';
+          const arrow = cfg.trend >= 0 ? '▲' : '▼';
+          const fmt = window.BI?.format;
+          let displayVal = cfg.value;
+          if (cfg.format === 'currency' && fmt?.currency) displayVal = fmt.currency(cfg.value);
+          else if (cfg.format === 'percentage' && fmt?.percentage) displayVal = fmt.percentage(cfg.value);
+          else if (cfg.format === 'integer' && fmt?.integer) displayVal = fmt.integer(cfg.value);
+          else if (fmt?.compact) displayVal = fmt.compact(cfg.value);
+
+          el.innerHTML = `
+            <div class="card" style="cursor:default;">
+              <div class="card-title" style="margin-bottom:var(--space-2);">${cfg.label}</div>
+              <div style="font-size:var(--text-2xl);font-weight:var(--font-bold);font-family:var(--font-mono);color:var(--color-text-primary);">${displayVal}</div>
+              <div style="display:flex;align-items:center;gap:var(--space-2);margin-top:var(--space-2);">
+                <span style="color:${color};font-weight:var(--font-semibold);font-size:var(--text-sm);">${arrow} ${Math.abs(cfg.trend).toFixed(1)}%</span>
+                <span class="text-tertiary" style="font-size:var(--text-xs);">vs last period</span>
+              </div>
+            </div>
+          `;
+        }
+      }
+
+      // Determine if we're being embedded in an iframe/object or standalone
+      const isEmbedded = window !== window.top;
+
+      function init() {
+        // Simulate loading delay for realistic feel
+        setTimeout(() => {
+          // Render inline KPI cards with sample data
+          if (!isEmbedded) {
+            renderKPI('kpi-revenue',    { label: 'Total Revenue',     value: 2845000, trend: 16.1, format: 'currency' });
+            renderKPI('kpi-users',      { label: 'Active Users',      value: 48230,   trend: 14.5, format: 'integer' });
+            renderKPI('kpi-conversion', { label: 'Conversion Rate',   value: 3.42,    trend: 7.5,  format: 'percentage' });
+            renderKPI('kpi-csat',       { label: 'CSAT Score',        value: 4.7,     trend: 4.4,  format: 'fixed' });
+          }
+
+          // Update timestamp
+          const now = new Date();
+          updatedEl.textContent = 'Last updated: ' + now.toLocaleString('en-US', {
+            month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
+          });
+
+          // Show grid, hide loader
+          loadingEl.style.display = 'none';
+          gridEl.style.display = 'grid';
+          gridEl.classList.add('dashboard-ready');
+        }, isEmbedded ? 100 : 800);
+      }
+
+      // Ready
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
+      } else {
+        init();
+      }
+    })();
+
+    // ── Refresh ────────────────────────────────────────────────────────
+    function refreshDashboard() {
+      const btn = document.querySelector('.refresh-btn');
+      const original = btn.innerHTML;
+      btn.innerHTML = '<span class="icon">⟳</span> Refreshing...';
+      btn.disabled = true;
+
+      // Reload all object/iframe elements by re-setting their src/data
+      document.querySelectorAll('.component-frame object').forEach(obj => {
+        const data = obj.getAttribute('data');
+        obj.setAttribute('data', '');
+        setTimeout(() => obj.setAttribute('data', data), 50);
+      });
+
+      const now = new Date();
+      document.getElementById('lastUpdated').textContent = 'Last updated: ' + now.toLocaleString('en-US', {
+        month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
+      });
+
+      setTimeout(() => {
+        btn.innerHTML = original;
+        btn.disabled = false;
+      }, 1500);
+    }
+  </script>
+</body>
+</html>

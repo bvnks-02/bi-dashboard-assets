@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sales Heatmap by Time</title>
+  <link rel="stylesheet" href="../design-tokens.css">
+
+  <style>
+    /* ── Component: Sales Heatmap by Time ──────────────────────────── */
+    .chart-card {
+      min-height: 380px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .chart-card .card-body {
+      flex: 1;
+      min-height: 0;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .chart-card .chart-container {
+      width: 100%;
+      height: 100%;
+      position: absolute;
+      inset: 0;
+    }
+
+    .chart-card .chart-container canvas {
+      display: block;
+      width: 100% !important;
+      height: 100% !important;
+    }
+
+    /* ── Color bar legend ─────────────────────────────────────────── */
+    .heatmap-legend {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2, 8px);
+      font-size: var(--text-xs, 0.625rem);
+      color: var(--color-text-tertiary, #6b7280);
+      font-weight: var(--font-medium, 500);
+      letter-spacing: var(--tracking-wide, 0.05em);
+    }
+
+    .heatmap-legend .gradient-bar {
+      width: 80px;
+      height: 8px;
+      border-radius: var(--radius-sm, 4px);
+      background: linear-gradient(to right, rgb(15, 29, 39), rgb(94, 135, 245));
+    }
+
+    /* ── Skeleton / loading state ─────────────────────────────────── */
+    .chart-card .skeleton-chart {
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(
+        90deg,
+        var(--color-bg-surface, #1a1d27) 25%,
+        var(--color-bg-hover, #2a2f42) 50%,
+        var(--color-bg-surface, #1a1d27) 75%
+      );
+      background-size: 200% 100%;
+      animation: shimmer 1.5s ease infinite;
+      border-radius: var(--radius-sm, 4px);
+    }
+
+    @keyframes shimmer {
+      0%   { background-position: -200% 0; }
+      100% { background-position: 200% 0; }
+    }
+
+    /* ── Responsive adjustments ───────────────────────────────────── */
+    @media (max-width: 768px) {
+      .chart-card {
+        min-height: 320px;
+      }
+      .heatmap-legend {
+        display: none;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .chart-card {
+        min-height: 280px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="card chart-card" id="heatmap-card">
+    <div class="card-header">
+      <span class="card-title">Sales Heatmap by Time</span>
+      <span class="heatmap-legend">
+        <span>Low</span>
+        <span class="gradient-bar"></span>
+        <span>High</span>
+      </span>
+    </div>
+    <div class="card-body" style="height:300px;">
+      <div class="chart-container" id="sales-heatmap-chart">
+        <canvas></canvas>
+      </div>
+      <div class="skeleton-chart" id="chart-skeleton" style="position:absolute;inset:0;z-index:1;"></div>
+    </div>
+  </div>
+
+  <script src="../js/bi-utils.js"></script>
+  <script src="../js/bi-charts.js"></script>
+
+  <script>
+    (function() {
+      'use strict';
+
+      const CHART_ID = 'sales-heatmap-chart';
+      const SKELETON_ID = 'chart-skeleton';
+      const CARD_ID = 'heatmap-card';
+
+      /**
+       * Render the heatmap with the given data.
+       * Removes the skeleton overlay, then calls BI.charts.heatmap().
+       */
+      function renderChart(heatmapData) {
+        // Hide skeleton
+        const skeleton = document.getElementById(SKELETON_ID);
+        if (skeleton) {
+          skeleton.style.opacity = '0';
+          skeleton.style.transition = 'opacity 0.3s ease';
+          setTimeout(function() { skeleton.remove(); }, 350);
+        }
+
+        // Render using the chart engine
+        BI.charts.heatmap(CHART_ID, heatmapData, {
+          xLabels: heatmapData.xLabels,
+          yLabels: heatmapData.yLabels,
+        });
+      }
+
+      /**
+       * Fetch sample data from the assets directory.
+       * Falls back to generated data on failure.
+       */
+      function loadData() {
+        // Attempt to fetch from the sample data file
+        fetch('../assets/sample-data.json')
+          .then(function(resp) {
+            if (!resp.ok) throw new Error('HTTP ' + resp.status);
+            return resp.json();
+          })
+          .then(function(json) {
+            var data = json.heatmapData;
+            if (data && data.grid && data.grid.length > 0) {
+              renderChart(data);
+            } else {
+              generateAndRender();
+            }
+          })
+          .catch(function() {
+            generateAndRender();
+          });
+      }
+
+      /**
+       * Generate 5x7 sample heatmap data as fallback.
+       */
+      function generateAndRender() {
+        var data = {
+          grid: [
+            [45, 62, 78, 55, 42, 38, 51],
+            [32, 48, 91, 85, 63, 44, 39],
+            [28, 52, 112, 98, 72, 48, 35],
+            [38, 58, 95, 88, 68, 52, 44],
+            [55, 72, 86, 72, 58, 62, 58],
+          ],
+          xLabels: ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'],
+          yLabels: ['10-12am','12-2pm','2-4pm','4-6pm','6-8pm'],
+        };
+        renderChart(data);
+      }
+
+      // ── Resize handling ─────────────────────────────────────────
+      var resizeTimer = null;
+
+      function handleResize() {
+        clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(function() {
+          // Re-fetch data and re-render if skeleton is gone
+          var chartEl = document.getElementById(CHART_ID);
+          if (chartEl && chartEl.querySelector('canvas')) {
+            loadData();
+          }
+        }, 200);
+      }
+
+      // ── Boot ────────────────────────────────────────────────────
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', function() {
+          loadData();
+          window.addEventListener('resize', handleResize);
+        });
+      } else {
+        loadData();
+        window.addEventListener('resize', handleResize);
+      }
+    })();
+  </script>
+
+</body>
+</html>

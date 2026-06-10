@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Revenue by Product — Pie/Donut Chart</title>
+  <link rel="stylesheet" href="../design-tokens.css">
+
+  <style>
+    /* ── Component: Revenue by Product Donut Chart ────────────────── */
+    .chart-card {
+      min-height: 320px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .chart-card .card-body {
+      flex: 1;
+      min-height: 0;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .chart-card .chart-container {
+      width: 100%;
+      height: 100%;
+      position: absolute;
+      inset: 0;
+    }
+
+    .chart-card .chart-container canvas {
+      display: block;
+      width: 100% !important;
+      height: 100% !important;
+    }
+
+    /* ── Legend ───────────────────────────────────────────────────── */
+    .pie-legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--space-3, 12px);
+      margin-top: var(--space-3, 12px);
+      padding: var(--space-2, 8px) var(--space-1, 4px);
+    }
+
+    .pie-legend-item {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2, 8px);
+      font-size: var(--text-xs, 0.625rem);
+      color: var(--color-text-secondary, #9aa0b0);
+      font-weight: var(--font-medium, 500);
+    }
+
+    .pie-legend-swatch {
+      width: 10px;
+      height: 10px;
+      border-radius: var(--radius-full, 9999px);
+      flex-shrink: 0;
+    }
+
+    .pie-legend-value {
+      font-family: var(--font-mono, 'JetBrains Mono', monospace);
+      color: var(--color-text-primary, #e8eaed);
+      margin-left: auto;
+    }
+
+    /* ── Skeleton / loading state ─────────────────────────────────── */
+    .chart-card .skeleton-chart {
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(
+        90deg,
+        var(--color-bg-surface, #1a1d27) 25%,
+        var(--color-bg-hover, #2a2f42) 50%,
+        var(--color-bg-surface, #1a1d27) 75%
+      );
+      background-size: 200% 100%;
+      animation: shimmer 1.5s ease infinite;
+      border-radius: var(--radius-sm, 4px);
+    }
+
+    /* ── Responsive adjustments ───────────────────────────────────── */
+    @media (max-width: 768px) {
+      .chart-card {
+        min-height: 260px;
+      }
+      .pie-legend {
+        gap: var(--space-2, 8px);
+      }
+    }
+
+    @media (max-width: 480px) {
+      .chart-card {
+        min-height: 220px;
+      }
+      .chart-card .card-header {
+        flex-wrap: wrap;
+        gap: var(--space-1, 4px);
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="card chart-card" id="revenue-product-card">
+    <div class="card-header">
+      <span class="card-title">Revenue by Product</span>
+    </div>
+    <div class="card-body">
+      <div class="chart-container" id="product-mix-chart">
+        <canvas></canvas>
+      </div>
+      <div class="skeleton-chart" id="chart-skeleton" style="position:absolute;inset:0;z-index:1;"></div>
+    </div>
+    <div class="pie-legend" id="pie-legend"></div>
+  </div>
+
+  <script src="../js/bi-utils.js"></script>
+  <script src="../js/bi-charts.js"></script>
+
+  <script>
+    (function() {
+      'use strict';
+
+      const CHART_ID = 'product-mix-chart';
+      const SKELETON_ID = 'chart-skeleton';
+      const CARD_ID = 'revenue-product-card';
+      const LEGEND_ID = 'pie-legend';
+
+      /**
+       * Build a color-coded legend beneath the donut chart.
+       */
+      function buildLegend(data, total) {
+        var legendEl = document.getElementById(LEGEND_ID);
+        if (!legendEl) return;
+
+        legendEl.innerHTML = '';
+        data.forEach(function(d) {
+          var pct = ((d.value / total) * 100).toFixed(1);
+          var item = document.createElement('div');
+          item.className = 'pie-legend-item';
+
+          var swatch = document.createElement('span');
+          swatch.className = 'pie-legend-swatch';
+          swatch.style.background = d.color;
+
+          var label = document.createElement('span');
+          label.textContent = d.label;
+
+          var value = document.createElement('span');
+          value.className = 'pie-legend-value';
+          value.textContent = pct + '%';
+
+          item.appendChild(swatch);
+          item.appendChild(label);
+          item.appendChild(value);
+          legendEl.appendChild(item);
+        });
+      }
+
+      /**
+       * Render the donut chart with the given productMix data.
+       * Removes the skeleton overlay, then calls BI.charts.pie().
+       */
+      function renderChart(data) {
+        // Hide skeleton
+        var skeleton = document.getElementById(SKELETON_ID);
+        if (skeleton) {
+          skeleton.style.opacity = '0';
+          skeleton.style.transition = 'opacity 0.3s ease';
+          setTimeout(function() { skeleton.remove(); }, 350);
+        }
+
+        // Calculate total for the legend
+        var total = data.reduce(function(sum, d) { return sum + d.value; }, 0);
+
+        // Build legend
+        buildLegend(data, total);
+
+        // Render using the chart engine — donut is the default (donut: true)
+        BI.charts.pie(CHART_ID, data, {
+          donut: true,
+          animate: true,
+        });
+      }
+
+      /**
+       * Fetch sample data from the assets directory.
+       * Falls back to generated data on failure.
+       */
+      function loadData() {
+        fetch('../assets/sample-data.json')
+          .then(function(resp) {
+            if (!resp.ok) throw new Error('HTTP ' + resp.status);
+            return resp.json();
+          })
+          .then(function(json) {
+            var data = json.productMix;
+            if (data && data.length > 0) {
+              renderChart(data);
+            } else {
+              generateAndRender();
+            }
+          })
+          .catch(function() {
+            generateAndRender();
+          });
+      }
+
+      /**
+       * Generate 5 product categories as fallback data.
+       */
+      function generateAndRender() {
+        var data = [
+          { label: 'SaaS Subscriptions',    value: 42, color: BI.colors.get(0) },
+          { label: 'Professional Services', value: 23, color: BI.colors.get(1) },
+          { label: 'Hardware',              value: 18, color: BI.colors.get(2) },
+          { label: 'Licensing',             value: 12, color: BI.colors.get(3) },
+          { label: 'Other',                 value:  5, color: BI.colors.get(4) },
+        ];
+        renderChart(data);
+      }
+
+      // ── Boot ────────────────────────────────────────────────────
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', loadData);
+      } else {
+        loadData();
+      }
+
+      // ── Resize: chart engine handles ResizeObserver internally ──
+    })();
+  </script>
+
+</body>
+</html>

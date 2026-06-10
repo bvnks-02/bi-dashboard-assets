@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Data Table — BI Dashboard Component</title>
+
+  <!-- ── Design System Tokens ────────────────────────────────────────── -->
+  <link rel="stylesheet" href="../design-tokens.css" />
+
+  <style>
+    /* ==================================================================
+       Data Table — Component Styles
+       ================================================================== */
+
+    /* ── Demo Container ────────────────────────────────────────────── */
+    .data-table-demo {
+      padding: var(--space-8);
+    }
+
+    /* ── Card Wrapper ──────────────────────────────────────────────── */
+    .data-table-card {
+      background: var(--color-bg-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      padding: var(--space-5);
+      transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+      animation: fadeIn 0.5s ease forwards;
+    }
+
+    .data-table-card:hover {
+      border-color: var(--color-border-light);
+    }
+
+    .data-table-card .card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: var(--space-4);
+    }
+
+    .data-table-card .card-title {
+      font-size: var(--text-sm);
+      font-weight: var(--font-semibold);
+      color: var(--color-text-secondary);
+      text-transform: uppercase;
+      letter-spacing: var(--tracking-wide);
+    }
+
+    .data-table-card .card-subtitle {
+      font-size: var(--text-xs);
+      color: var(--color-text-tertiary);
+    }
+
+    /* ── Table Wrapper (responsive scroll) ─────────────────────────── */
+    .data-table-wrapper {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      margin: 0 calc(-1 * var(--space-5));
+      padding: 0 var(--space-5);
+    }
+
+    @media (max-width: 768px) {
+      .data-table-wrapper {
+        margin: 0 calc(-1 * var(--space-4));
+        padding: 0 var(--space-4);
+      }
+    }
+
+    /* ── Table ─────────────────────────────────────────────────────── */
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: var(--text-sm);
+      min-width: 640px;
+    }
+
+    /* ── Table Header ──────────────────────────────────────────────── */
+    .data-table thead tr {
+      border-bottom: 1px solid var(--color-border);
+    }
+
+    .data-table th {
+      text-align: left;
+      padding: var(--space-3) var(--space-3);
+      font-size: var(--text-xs);
+      font-weight: var(--font-semibold);
+      color: var(--color-text-tertiary);
+      text-transform: uppercase;
+      letter-spacing: var(--tracking-wide);
+      white-space: nowrap;
+      user-select: none;
+      cursor: pointer;
+      position: relative;
+      transition: color var(--transition-fast);
+    }
+
+    .data-table th:hover {
+      color: var(--color-text-primary);
+    }
+
+    .data-table th .sort-icon {
+      display: inline-block;
+      margin-left: var(--space-1);
+      font-size: var(--text-xs);
+      opacity: 0.3;
+      transition: opacity var(--transition-fast);
+    }
+
+    .data-table th:hover .sort-icon {
+      opacity: 0.6;
+    }
+
+    .data-table th.sorted-asc .sort-icon,
+    .data-table th.sorted-desc .sort-icon {
+      opacity: 1;
+      color: var(--color-accent);
+    }
+
+    .data-table th.sorted-asc .sort-icon::after {
+      content: '\25B2';
+    }
+    .data-table th.sorted-desc .sort-icon::after {
+      content: '\25BC';
+    }
+    .data-table th:not(.sorted-asc):not(.sorted-desc) .sort-icon::after {
+      content: '\25B4';
+    }
+
+    /* ── Numeric columns: right-align ──────────────────────────────── */
+    .data-table th.numeric,
+    .data-table td.numeric {
+      text-align: right;
+      font-family: var(--font-mono);
+    }
+
+    /* ── Rank column: center ───────────────────────────────────────── */
+    .data-table th.rank-col,
+    .data-table td.rank-col {
+      text-align: center;
+      width: 48px;
+    }
+
+    /* ── Table Body ────────────────────────────────────────────────── */
+    .data-table tbody tr {
+      border-bottom: 1px solid var(--color-border);
+      transition: background var(--transition-fast);
+    }
+
+    .data-table tbody tr:last-child {
+      border-bottom: none;
+    }
+
+    .data-table tbody tr:hover {
+      background: var(--color-bg-hover);
+    }
+
+    .data-table tbody tr:focus-within {
+      background: var(--color-bg-active);
+    }
+
+    .data-table td {
+      padding: var(--space-3) var(--space-3);
+      color: var(--color-text-primary);
+      vertical-align: middle;
+      white-space: nowrap;
+    }
+
+    /* ── Product Name ──────────────────────────────────────────────── */
+    .data-table .product-cell {
+      font-weight: var(--font-medium);
+    }
+
+    /* ── Revenue ───────────────────────────────────────────────────── */
+    .data-table .revenue-cell {
+      color: var(--color-text-primary);
+    }
+
+    /* ── Growth % ──────────────────────────────────────────────────── */
+    .data-table .growth-positive {
+      color: var(--color-success);
+    }
+    .data-table .growth-negative {
+      color: var(--color-danger);
+    }
+
+    /* ── Status Badge ──────────────────────────────────────────────── */
+    .data-table .status-cell {
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+    }
+
+    .data-table .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-1);
+      padding: 2px 10px;
+      border-radius: var(--radius-full);
+      font-size: var(--text-xs);
+      font-weight: var(--font-medium);
+      line-height: 1.4;
+      text-transform: capitalize;
+    }
+
+    .status-badge--growing {
+      background: rgba(34, 197, 94, 0.12);
+      color: var(--color-success);
+    }
+
+    .status-badge--declining {
+      background: rgba(239, 68, 68, 0.12);
+      color: var(--color-danger);
+    }
+
+    .status-badge--stable {
+      background: rgba(245, 158, 11, 0.12);
+      color: var(--color-warning);
+    }
+
+    .status-badge .status-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      display: inline-block;
+      flex-shrink: 0;
+    }
+
+    .status-badge--growing .status-dot {
+      background: var(--color-success);
+    }
+    .status-badge--declining .status-dot {
+      background: var(--color-danger);
+    }
+    .status-badge--stable .status-dot {
+      background: var(--color-warning);
+    }
+
+    /* ── Loading / Empty States ────────────────────────────────────── */
+    .data-table-loading,
+    .data-table-empty {
+      padding: var(--space-10) var(--space-4);
+      text-align: center;
+      color: var(--color-text-tertiary);
+      font-size: var(--text-sm);
+    }
+
+    .data-table-loading .spinner {
+      display: inline-block;
+      width: 24px;
+      height: 24px;
+      border: 2px solid var(--color-border);
+      border-top-color: var(--color-accent);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      margin-bottom: var(--space-2);
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .data-table-error {
+      padding: var(--space-6) var(--space-4);
+      text-align: center;
+      color: var(--color-danger);
+      font-size: var(--text-sm);
+    }
+
+    /* ── Row count footer ──────────────────────────────────────────── */
+    .data-table-footer {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      margin-top: var(--space-3);
+      font-size: var(--text-xs);
+      color: var(--color-text-tertiary);
+      font-family: var(--font-mono);
+    }
+
+    /* ── Responsive ────────────────────────────────────────────────── */
+    @media (max-width: 768px) {
+      .data-table-demo {
+        padding: var(--space-4);
+      }
+
+      .data-table-card {
+        padding: var(--space-4);
+      }
+
+      .data-table {
+        font-size: var(--text-xs);
+      }
+
+      .data-table th,
+      .data-table td {
+        padding: var(--space-2) var(--space-2);
+      }
+
+      .data-table .status-badge {
+        padding: 1px 8px;
+        font-size: 10px;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .data-table-card .card-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--space-1);
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ── Demo Area ────────────────────────────────────────────────── -->
+  <div class="data-table-demo" id="data-table-root">
+    <div class="data-table-card">
+      <div class="card-header">
+        <span class="card-title">Product Performance Table</span>
+        <span class="card-subtitle" id="table-subtitle">Loading...</span>
+      </div>
+      <div class="data-table-wrapper">
+        <div class="data-table-loading" id="table-loading">
+          <div class="spinner"></div>
+          <div>Loading data...</div>
+        </div>
+        <table class="data-table" id="data-table" style="display:none;">
+          <thead>
+            <tr>
+              <th class="rank-col" data-column="rank">
+                Rank
+                <span class="sort-icon"></span>
+              </th>
+              <th data-column="product">
+                Product
+                <span class="sort-icon"></span>
+              </th>
+              <th class="numeric" data-column="revenue">
+                Revenue
+                <span class="sort-icon"></span>
+              </th>
+              <th class="numeric" data-column="growth">
+                Growth %
+                <span class="sort-icon"></span>
+              </th>
+              <th class="numeric" data-column="marketShare">
+                Market Share
+                <span class="sort-icon"></span>
+              </th>
+              <th data-column="status">
+                Status
+                <span class="sort-icon"></span>
+              </th>
+            </tr>
+          </thead>
+          <tbody id="table-body">
+            <!-- Rows rendered by JS -->
+          </tbody>
+        </table>
+        <div class="data-table-empty" id="table-empty" style="display:none;">
+          No data available
+        </div>
+        <div class="data-table-error" id="table-error" style="display:none;"></div>
+      </div>
+      <div class="data-table-footer" id="table-footer" style="display:none;"></div>
+    </div>
+  </div>
+
+  <!-- ── Utility Library ──────────────────────────────────────────── -->
+  <script src="../js/bi-utils.js"></script>
+
+  <script>
+    /* ==================================================================
+       BI Dashboard — Data Table Component
+       ================================================================== */
+
+    (function() {
+      'use strict';
+
+      const BI = window.BI || {};
+
+      // ── Helpers ──────────────────────────────────────────────────────
+
+      function getStatusBadgeClass(status) {
+        switch (status) {
+          case 'growing':   return 'status-badge--growing';
+          case 'declining': return 'status-badge--declining';
+          case 'stable':    return 'status-badge--stable';
+          default:          return 'status-badge--stable';
+        }
+      }
+
+      function getGrowthClass(value) {
+        if (value > 0) return 'growth-positive';
+        if (value < 0) return 'growth-negative';
+        return '';
+      }
+
+      /**
+       * Format revenue using BI.format.currency if available, else fallback.
+       */
+      function formatRevenue(val) {
+        if (BI.format && BI.format.currency) {
+          return BI.format.currency(val, 'USD', 0);
+        }
+        return '$' + Number(val).toLocaleString('en-US');
+      }
+
+      /**
+       * Format percentage using BI.format.percentage if available, else fallback.
+       */
+      function formatGrowth(val) {
+        if (BI.format && BI.format.percentage) {
+          return BI.format.percentage(val, 1);
+        }
+        const sign = val > 0 ? '+' : '';
+        return sign + Number(val).toFixed(1) + '%';
+      }
+
+      /**
+       * Format market share value.
+       */
+      function formatMarketShare(val) {
+        return Number(val).toFixed(1) + '%';
+      }
+
+      // ── Sort State ───────────────────────────────────────────────────
+
+      let sortState = {
+        column: 'rank',
+        direction: 'asc'
+      };
+
+      // ── Data Store ───────────────────────────────────────────────────
+
+      let tableData = [];
+
+      // ── DOM Refs ─────────────────────────────────────────────────────
+
+      const $ = (sel, ctx) => (ctx || document).querySelector(sel);
+      const $$ = (sel, ctx) => [...(ctx || document).querySelectorAll(sel)];
+
+      const tableEl = $('#data-table');
+      const tbody   = $('#table-body');
+      const loadingEl  = $('#table-loading');
+      const emptyEl    = $('#table-empty');
+      const errorEl    = $('#table-error');
+      const footerEl   = $('#table-footer');
+      const subtitleEl = $('#table-subtitle');
+      const headers    = $$('#data-table thead th');
+
+      // ── Render Rows ─────────────────────────────────────────────────
+
+      function renderRows(data) {
+        if (!data || data.length === 0) {
+          tableEl.style.display = 'none';
+          emptyEl.style.display  = 'block';
+          footerEl.style.display = 'none';
+          return;
+        }
+
+        tableEl.style.display = '';
+        emptyEl.style.display  = 'none';
+        footerEl.style.display = '';
+
+        // Sort data
+        const sorted = [...data];
+        const col = sortState.column;
+        const dir = sortState.direction === 'asc' ? 1 : -1;
+
+        sorted.sort((a, b) => {
+          let aVal = a[col];
+          let bVal = b[col];
+
+          if (typeof aVal === 'string') {
+            aVal = aVal.toLowerCase();
+            bVal = (bVal || '').toLowerCase();
+            return aVal < bVal ? -1 * dir : aVal > bVal ? 1 * dir : 0;
+          }
+
+          // Numeric
+          return ((aVal || 0) - (bVal || 0)) * dir;
+        });
+
+        // Update sort icons
+        headers.forEach(h => {
+          const colName = h.getAttribute('data-column');
+          h.classList.remove('sorted-asc', 'sorted-desc');
+          if (colName === sortState.column) {
+            h.classList.add(sortState.direction === 'asc' ? 'sorted-asc' : 'sorted-desc');
+          }
+        });
+
+        // Build rows
+        tbody.innerHTML = '';
+        const fragment = document.createDocumentFragment();
+
+        sorted.forEach((row, idx) => {
+          const tr = document.createElement('tr');
+
+          // Rank
+          const tdRank = document.createElement('td');
+          tdRank.className = 'rank-col';
+          tdRank.textContent = row.rank;
+          tr.appendChild(tdRank);
+
+          // Product
+          const tdProduct = document.createElement('td');
+          tdProduct.className = 'product-cell';
+          tdProduct.textContent = row.product;
+          tr.appendChild(tdProduct);
+
+          // Revenue
+          const tdRevenue = document.createElement('td');
+          tdRevenue.className = 'numeric revenue-cell';
+          tdRevenue.textContent = formatRevenue(row.revenue);
+          tr.appendChild(tdRevenue);
+
+          // Growth %
+          const tdGrowth = document.createElement('td');
+          tdGrowth.className = 'numeric ' + getGrowthClass(row.growth);
+          tdGrowth.textContent = formatGrowth(row.growth);
+          tr.appendChild(tdGrowth);
+
+          // Market Share
+          const tdShare = document.createElement('td');
+          tdShare.className = 'numeric';
+          tdShare.textContent = formatMarketShare(row.marketShare);
+          tr.appendChild(tdShare);
+
+          // Status
+          const tdStatus = document.createElement('td');
+          tdStatus.className = 'status-cell';
+          const badge = document.createElement('span');
+          badge.className = 'status-badge ' + getStatusBadgeClass(row.status);
+          const dot = document.createElement('span');
+          dot.className = 'status-dot';
+          badge.appendChild(dot);
+          badge.appendChild(document.createTextNode(row.status));
+          tdStatus.appendChild(badge);
+          tr.appendChild(tdStatus);
+
+          // Stagger animation
+          tr.style.animationDelay = (idx * 30) + 'ms';
+
+          fragment.appendChild(tr);
+        });
+
+        tbody.appendChild(fragment);
+
+        // Update footer with row count
+        footerEl.textContent = data.length + ' product' + (data.length !== 1 ? 's' : '');
+      }
+
+      // ── Sorting ──────────────────────────────────────────────────────
+
+      function handleSort(column) {
+        if (sortState.column === column) {
+          // Toggle direction
+          sortState.direction = sortState.direction === 'asc' ? 'desc' : 'asc';
+        } else {
+          sortState.column = column;
+          sortState.direction = 'asc';
+        }
+
+        renderRows(tableData);
+      }
+
+      // ── Attach Header Click Events ──────────────────────────────────
+
+      headers.forEach(th => {
+        th.addEventListener('click', function() {
+          const col = this.getAttribute('data-column');
+          if (col) handleSort(col);
+        });
+      });
+
+      // ── Fetch Data ───────────────────────────────────────────────────
+
+      function fetchData() {
+        loadingEl.style.display = '';
+        tableEl.style.display = 'none';
+        emptyEl.style.display  = 'none';
+        errorEl.style.display  = 'none';
+        footerEl.style.display = 'none';
+
+        const dataUrl = '../assets/sample-data.json';
+
+        fetch(dataUrl)
+          .then(function(response) {
+            if (!response.ok) {
+              throw new Error('HTTP ' + response.status + ' ' + response.statusText);
+            }
+            return response.json();
+          })
+          .then(function(json) {
+            // Extract tableData from the JSON
+            const raw = json.tableData;
+            if (!raw || !Array.isArray(raw) || raw.length === 0) {
+              loadingEl.style.display = 'none';
+              tableEl.style.display = 'none';
+              emptyEl.style.display  = 'block';
+              footerEl.style.display = 'none';
+              subtitleEl.textContent = '0 products';
+              return;
+            }
+
+            tableData = raw;
+            sortState.column = 'rank';
+            sortState.direction = 'asc';
+
+            loadingEl.style.display = 'none';
+            subtitleEl.textContent = raw.length + ' product' + (raw.length !== 1 ? 's' : '');
+            renderRows(tableData);
+          })
+          .catch(function(err) {
+            loadingEl.style.display = 'none';
+            tableEl.style.display = 'none';
+            emptyEl.style.display  = 'none';
+            errorEl.style.display  = '';
+            errorEl.textContent = 'Failed to load data: ' + err.message;
+            subtitleEl.textContent = 'Error';
+          });
+      }
+
+      // ── Initialize ──────────────────────────────────────────────────
+
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', fetchData);
+      } else {
+        fetchData();
+      }
+
+    })();
+  </script>
+
+</body>
+</html>
