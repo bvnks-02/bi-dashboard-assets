@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # BI Dashboard Component Library
 
 A production-quality business intelligence dashboard component library built with vanilla HTML, CSS, and JavaScript — no framework dependencies. Dark theme, responsive, ready to embed or extend.
@@ -191,3 +192,7 @@ Utility library `js/bi-utils.js` provides:
 ## License
 
 MIT — free for any use.
+=======
+# bi-dashboard-assets
+a collection of ready web assets for business analyst , coders making web dashboards
+>>>>>>> 96773ce41b5d99f3e15a99aa29f273089ee5365c
